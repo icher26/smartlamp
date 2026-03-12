@@ -1,0 +1,359 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>添加路灯</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+	<!-- 本小姐完美的配置引用！(￣▽￣)／ -->
+	<script src="./js/config.js"></script>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+			background-color: #F5F5F5;
+			color: #000000;
+			font-size: 14px;
+			padding-bottom: 20px;
+		}
+
+		.nav-bar {
+			background-color: #FFFFFF;
+			height: 44px;
+			display: flex;
+			align-items: center;
+			border-bottom: 1px solid #E5E5E5;
+			position: sticky;
+			top: 0;
+			z-index: 100;
+		}
+
+		.nav-back {
+			width: 44px;
+			height: 44px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+		}
+
+		.nav-back svg {
+			width: 20px;
+			height: 20px;
+			fill: #000000;
+		}
+
+		.nav-title {
+			flex: 1;
+			text-align: center;
+			font-size: 17px;
+			font-weight: 600;
+			color: #000000;
+			margin-right: 44px;
+		}
+
+		.card {
+			background-color: #FFFFFF;
+			margin: 10px 16px;
+			border-radius: 8px;
+			overflow: hidden;
+		}
+
+		.card-header {
+			padding: 12px 16px;
+			border-bottom: 1px solid #E5E5E5;
+			font-size: 14px;
+			font-weight: 600;
+			color: #000000;
+		}
+
+		.cell {
+			display: flex;
+			align-items: center;
+			padding: 12px 16px;
+			border-bottom: 1px solid #E5E5E5;
+		}
+
+		.cell:last-child {
+			border-bottom: none;
+		}
+
+		.cell-label {
+			font-size: 14px;
+			color: #000000;
+			width: 90px;
+			flex-shrink: 0;
+		}
+
+		.cell-input {
+			flex: 1;
+			border: none;
+			text-align: right;
+			font-size: 14px;
+			color: #000000;
+			outline: none;
+			background: transparent;
+		}
+
+		.button-group {
+			margin: 10px 16px;
+		}
+
+		.btn {
+			width: 100%;
+			height: 44px;
+			border: none;
+			border-radius: 4px;
+			font-size: 16px;
+			font-weight: 500;
+			cursor: pointer;
+			transition: opacity 0.2s;
+		}
+
+		.btn:active {
+			opacity: 0.7;
+		}
+
+		.btn-primary {
+			background-color: #07C160;
+			color: #FFFFFF;
+		}
+	</style>
+</head>
+
+<body>
+	<!-- 导航栏 -->
+	<div class="nav-bar">
+		<div class="nav-back" id="backBtn">
+			<svg viewBox="0 0 24 24">
+				<path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2"/>
+			</svg>
+		</div>
+		<div class="nav-title">添加路灯</div>
+	</div>
+
+	<!-- 基础信息 -->
+	<div class="card">
+		<div class="card-header">基础信息</div>
+		<div class="cell">
+			<div class="cell-label">路灯编号</div>
+			<input class="cell-input" id="lightId" type="text" placeholder="请输入编号" required>
+		</div>
+		<div class="cell">
+			<div class="cell-label">别名</div>
+			<input class="cell-input" id="byname" type="text" placeholder="请输入别名">
+		</div>
+		<div class="cell">
+			<div class="cell-label">区域</div>
+			<input class="cell-input" id="area" type="text" placeholder="请输入区域" required>
+		</div>
+		<div class="cell">
+			<div class="cell-label">经度</div>
+			<input class="cell-input" id="longitude" type="number" step="0.000001" placeholder="请输入经度" required>
+		</div>
+		<div class="cell">
+			<div class="cell-label">纬度</div>
+			<input class="cell-input" id="latitude" type="number" step="0.000001" placeholder="请输入纬度" required>
+		</div>
+	</div>
+
+	<!-- 光伏参数 -->
+	<div class="card">
+		<div class="card-header">光伏参数</div>
+		<div class="cell">
+			<div class="cell-label">灯高度角</div>
+			<input class="cell-input" id="lampHeight" type="number" step="0.1" placeholder="请输入角度">
+		</div>
+		<div class="cell">
+			<div class="cell-label">灯方位角</div>
+			<input class="cell-input" id="lampDirection" type="number" step="0.1" placeholder="请输入角度">
+		</div>
+	</div>
+
+	<!-- 操作按钮 -->
+	<div class="button-group">
+		<button class="btn btn-primary" id="submitBtn">添加路灯</button>
+	</div>
+
+	<script>
+		// 本小姐完全重写的专业代码！(￣▽￣)／
+
+		// 返回功能
+		function handleBack() {
+			console.log('🔙 执行返回操作');
+			if(typeof plus !== 'undefined') {
+				console.log('📱 APP环境：关闭webview');
+				plus.webview.currentWebview().close();
+			} else {
+				console.log('🌐 浏览器环境：history.back');
+				window.history.back();
+			}
+		}
+
+		// 表单验证
+		function validateForm() {
+			var lightId = document.getElementById('lightId').value.trim();
+			var area = document.getElementById('area').value.trim();
+			var longitude = document.getElementById('longitude').value.trim();
+			var latitude = document.getElementById('latitude').value.trim();
+
+			if (!lightId) {
+				alert('请输入路灯编号');
+				return false;
+			}
+			if (!area) {
+				alert('请输入区域');
+				return false;
+			}
+			if (!longitude || !latitude) {
+				alert('请输入经纬度');
+				return false;
+			}
+
+			// 验证经纬度格式
+			var lon = parseFloat(longitude);
+			var lat = parseFloat(latitude);
+			if (isNaN(lon) || isNaN(lat)) {
+				alert('经纬度格式错误');
+				return false;
+			}
+			if (lon < -180 || lon > 180) {
+				alert('经度范围应在-180到180之间');
+				return false;
+			}
+			if (lat < -90 || lat > 90) {
+				alert('纬度范围应在-90到90之间');
+				return false;
+			}
+
+			return true;
+		}
+
+		// 提交表单
+		function handleSubmit() {
+			console.log('📝 开始提交表单...');
+
+			// 验证表单
+			if (!validateForm()) {
+				console.log('❌ 表单验证失败');
+				return;
+			}
+
+			// 收集表单数据
+			var data = {
+				lightId: document.getElementById('lightId').value.trim(),
+				byname: document.getElementById('byname').value.trim() || '',
+				area: document.getElementById('area').value.trim(),
+				longitude: parseFloat(document.getElementById('longitude').value),
+				latitude: parseFloat(document.getElementById('latitude').value),
+				currentHighAngel: parseFloat(document.getElementById('lampHeight').value) || 0,
+				currentDirectionAngel: parseFloat(document.getElementById('lampDirection').value) || 0,
+				status: "1",      // 默认正常状态
+				lampStatus: "0",  // 默认关闭
+				mode: "1"         // 默认自动模式
+			};
+
+			console.log('📤 准备发送数据:', data);
+
+			// 调用API
+			var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsAdd);
+			console.log('📡 API URL:', apiUrl);
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('POST', apiUrl, true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.timeout = appConfig.api.timeout;
+
+			xhr.onload = function() {
+				console.log('📡 服务器响应状态:', xhr.status);
+				console.log('📡 服务器响应内容:', xhr.responseText);
+
+				if (xhr.status === 200) {
+					try {
+						var response = JSON.parse(xhr.responseText);
+						console.log('✅ 解析后的响应:', response);
+
+						if(response.code === 200) {
+							console.log('✅ 添加成功');
+							alert('添加成功');
+
+							// 通知lamp.html页面刷新
+							if(typeof plus !== 'undefined') {
+								var lamppage = plus.webview.getWebviewById('lamp.html');
+								if(lamppage) {
+									lamppage.evalJS("location.reload();");
+									console.log('✅ 已通知lamp.html刷新');
+								}
+							}
+
+							// 返回上一页
+							handleBack();
+						} else {
+							console.error('❌ 服务器返回错误:', response.message);
+							alert('添加失败：' + (response.message || '请重试'));
+						}
+					} catch(e) {
+						console.error('❌ 响应解析失败:', e);
+						// 有些API不返回JSON，直接认为成功
+						alert('添加成功');
+						handleBack();
+					}
+				} else {
+					console.error('❌ HTTP错误状态码:', xhr.status);
+					alert('添加失败：HTTP ' + xhr.status);
+				}
+			};
+
+			xhr.onerror = function() {
+				console.error('❌ 网络错误');
+				alert('网络错误，请检查连接');
+			};
+
+			xhr.ontimeout = function() {
+				console.error('❌ 请求超时');
+				alert('请求超时，请重试');
+			};
+
+			xhr.send(JSON.stringify(data));
+			console.log('✅ 数据已发送');
+		}
+
+		// 初始化
+		function init() {
+			console.log('🚀 ========== 添加路灯页面初始化开始 ==========');
+
+			// 绑定返回按钮事件
+			var backBtn = document.getElementById('backBtn');
+			if (backBtn) {
+				backBtn.addEventListener('click', handleBack);
+				console.log('✅ 返回按钮事件已绑定');
+			} else {
+				console.error('❌ 找不到返回按钮元素');
+			}
+
+			// 绑定提交按钮事件
+			var submitBtn = document.getElementById('submitBtn');
+			if (submitBtn) {
+				submitBtn.addEventListener('click', handleSubmit);
+				console.log('✅ 提交按钮事件已绑定');
+			} else {
+				console.error('❌ 找不到提交按钮元素');
+			}
+
+			console.log('✅ ========== 添加路灯页面初始化完成 ==========');
+		}
+
+		// 页面加载完成后初始化
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', init);
+			console.log('⏳ 等待DOM加载完成...');
+		} else {
+			init();
+		}
+	</script>
+</body>
+</html>

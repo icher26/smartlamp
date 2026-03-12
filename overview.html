@@ -1,0 +1,331 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<title>数据总览</title>
+	<link href="css/mui.min.css" rel="stylesheet"/>
+	<script src="./js/config.js"></script>
+	<script src="./js/mui.min.js"></script>
+	<script src="./libs/echarts-all.js"></script>
+</head>
+<body>
+	<div id="load_card" class="page-container">
+		<!-- 数据卡片 -->
+		<div class="stats-section">
+			<div class="stats-card">
+				<div class="stats-icon">
+					<!-- 灯泡图标 -->
+					<svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="12" cy="10" r="4" stroke="currentColor" stroke-width="2"/>
+						<path d="M12 14 L12 18 M10 18 L14 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+					</svg>
+				</div>
+				<div class="stats-content">
+					<div class="stats-label">路灯总数</div>
+					<div class="stats-value" id="totalLamps">--</div>
+				</div>
+			</div>
+		</div>
+
+		<!-- 图表卡片 -->
+		<div class="chart-card">
+			<div class="chart-container" id="mapLamp"></div>
+		</div>
+	</div>
+</body>
+<style>
+	/* ==================== 全局样式 ==================== */
+	body {
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+		background-color: #F7F7F7;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	/* ==================== 页面容器 ==================== */
+	.page-container {
+		padding: 16px;
+		padding-bottom: 80px;
+	}
+
+	/* ==================== 统计卡片区域 ==================== */
+	.stats-section {
+		margin-bottom: 16px;
+	}
+
+	.stats-card {
+		background: #FFFFFF;
+		border-radius: 12px;
+		padding: 20px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+		display: flex;
+		align-items: center;
+		gap: 16px;
+	}
+
+	.stats-icon {
+		flex: 0 0 auto;
+		width: 56px;
+		height: 56px;
+		background: linear-gradient(135deg, #07C160 0%, #06AD56 100%);
+		border-radius: 12px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #FFFFFF;
+	}
+
+	.stats-content {
+		flex: 1;
+	}
+
+	.stats-label {
+		font-size: 14px;
+		color: #999999;
+		margin-bottom: 4px;
+	}
+
+	.stats-value {
+		font-size: 24px;
+		font-weight: 600;
+		color: #1A1A1A;
+	}
+
+	/* ==================== 图表卡片 ==================== */
+	.chart-card {
+		background: #FFFFFF;
+		border-radius: 12px;
+		box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+		padding: 16px;
+		overflow: hidden;
+	}
+
+	.chart-container {
+		width: 100%;
+		height: 450px;
+	}
+
+	/* ==================== 响应式优化 ==================== */
+	@media (max-width: 375px) {
+		.stats-icon {
+			width: 48px;
+			height: 48px;
+		}
+
+		.stats-value {
+			font-size: 22px;
+		}
+
+		.chart-container {
+			height: 400px;
+		}
+	}
+</style>
+<script type="text/javascript">
+	var mapLampDom = null;
+	var mapLampEchart = null;
+	var areaData = null;
+	var area = [];
+	var areaLampNum = [];
+	var chartInitialized = false;
+
+	mui.init({
+		subpages:[{
+			url:'overview.html',
+			id:'overview.html',
+			styles:{
+				top: '48px',
+				bottom: '0px',
+			}
+		}],
+		pullRefresh : {
+			container:"#load_card",
+			down : {
+				height:50,
+				contentover : "释放立即刷新",
+				callback : refresh
+			}
+		}
+	});
+
+	function refresh() {
+		var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsTotal);
+		mui.ajax(apiUrl,{
+			dataType:'json',
+			type:'post',
+			timeout:appConfig.api.timeout,
+			headers:{'Content-Type':'application/json'},
+			success:function(data){
+				if(data && data.data && data.data.length > 0) {
+					areaData = data.data;
+					var length = data.data.length;
+					var totalCount = 0;
+
+					area = [];
+					areaLampNum = [];
+
+					for(var i = 0; i < length; i++){
+						area.push(areaData[i].area);
+						areaLampNum.push(areaData[i].counts);
+						totalCount += areaData[i].counts;
+					}
+
+					document.getElementById('totalLamps').innerHTML = totalCount + ' 盏';
+
+					if(mapLampEchart) {
+						mapLampEchart.setOption({
+							xAxis: {
+								data: area
+							},
+							series: [{
+								data: areaLampNum
+							}]
+						});
+					}
+				}
+			},
+			error:function(xhr,type,errorThrown){
+				console.log(errorThrown);
+				mui.toast('数据加载失败');
+			}
+		});
+
+		setTimeout(function() {
+			mui('#load_card').pullRefresh().endPulldownToRefresh();
+		}, 1000);
+	}
+
+	mui.plusReady(function () {
+		mapLampDom = document.getElementById('mapLamp');
+
+		if (!mapLampEchart && mapLampDom) {
+			mapLampEchart = echarts.init(mapLampDom);
+		}
+
+		if (chartInitialized) {
+			return;
+		}
+		chartInitialized = true;
+
+		var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsTotal);
+		mui.ajax(apiUrl,{
+			dataType:'json',
+			type:'post',
+			timeout:appConfig.api.timeout,
+			headers:{'Content-Type':'application/json'},
+			success:function(data){
+				console.log('===== 数据返回 =====');
+				console.log(data);
+
+				if(data && data.data && data.data.length > 0) {
+					areaData = data.data;
+					var length = data.data.length;
+					var totalCount = 0;
+
+					area = [];
+					areaLampNum = [];
+
+					for(var i = 0; i < length; i++){
+						area.push(areaData[i].area);
+						areaLampNum.push(areaData[i].counts);
+						totalCount += areaData[i].counts;
+					}
+
+					console.log('===== 处理后的数据 =====');
+					console.log('X轴区域:', area);
+					console.log('Y轴数量:', areaLampNum);
+
+					document.getElementById('totalLamps').innerHTML = totalCount + ' 盏';
+
+					var option = {
+						title: {
+							text: '区域路灯数量分布',
+							x: 'center',
+							y: 'top',
+							textStyle: {
+								fontSize: 16,
+								fontWeight: 'bold',
+								color: '#1A1A1A'
+							}
+						},
+						legend: {
+							data: ['路灯数量'],
+							x: 'left',
+							y: 'bottom',
+							textStyle: {
+								fontSize: 12,
+								color: '#666666'
+							}
+						},
+						tooltip: {
+							show: true,
+							trigger: 'axis'
+						},
+						grid: {
+							x: 50,
+							y: 50,
+							x2: 30,
+							y2: 80
+						},
+						xAxis: [
+							{
+								type: 'category',
+								data: area,
+								axisLabel: {
+									rotate: 45,
+									interval: 0,
+									textStyle: {
+										fontSize: 11,
+										color: '#666666'
+									}
+								}
+							}
+						],
+						yAxis: [
+							{
+								type: 'value'
+							}
+						],
+						series: [
+							{
+								name: '路灯数量',
+								type: 'bar',
+								data: areaLampNum,
+								itemStyle: {
+									normal: {
+										color: '#FF9800'
+									}
+								}
+							}
+						]
+					};
+
+					console.log('===== 图表配置 =====');
+					console.log(option);
+
+					mapLampEchart.setOption(option, true);
+					console.log('===== 图表已设置完成 =====');
+
+					window.addEventListener('resize', function() {
+						if (mapLampEchart) {
+							mapLampEchart.resize();
+						}
+					});
+				} else {
+					console.error('数据为空或格式错误');
+					mui.toast('数据为空');
+				}
+			},
+			error:function(xhr,type,errorThrown){
+				console.log('请求错误:', errorThrown);
+				mui.toast('数据加载失败，请稍后重试');
+			}
+		});
+
+	});
+</script>
+</body>
+</html>

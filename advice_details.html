@@ -1,0 +1,89 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="css/mui.css" rel="stylesheet" />
+		<script src="js/mui.js"></script>
+		
+	</head>
+
+	<body>
+		<header class="mui-bar mui-bar-nav">
+			<a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
+			<h1 id="head_line" class="mui-title">标题</h1>
+			<a id="change_status" class="mui-icon mui-icon-loop mui-pull-right"></a>
+		</header>
+		<div class="mui-content">
+			<form class="mui-input-group">
+				<div class="mui-input-row">
+				    <label>建议描述:</label>
+				</div>
+			</form></lebel><p id="content"></p>
+		</div>
+	</body>
+	<script type="text/javascript">
+		mui.back(function(){
+			mui.fire(lamppage,'customEvent');
+		})
+		var head_line_dom = document.getElementById("head_line")
+		var content_dom = document.getElementById("content")
+		mui.plusReady(function(){
+			var self = plus.webview.currentWebview();
+			var change_status_dom = document.getElementById("change_status")
+			detailId = self.detailId
+			console.log(detailId)
+			mui.ajax('http://8.137.33.218:8880/advice/selectone/' + detailId,{
+				dataType:'json',//服务器返回json格式数据
+				type:'get',//HTTP请求类型
+				timeout:10000,//超时时间设置为10秒；
+				headers:{'Content-Type':'application/json'},	              
+				success:function(data){
+					if(data.code == 200){
+						head_line_dom.innerText = data.data.title
+						content_dom.innerText = data.data.content
+						if(data.data.status == 0){
+							change_status_dom.classList.add('mui-hidden');
+						}
+					}
+				},
+				error:function(xhr,type,errorThrown){
+					console.log(errorThrown)
+				}
+			});
+			change_status_dom.addEventListener('tap', function(){
+				mui.ajax('http://8.137.33.218:8880/advice/check?id=' + detailId,{
+					dataType:'json',//服务器返回json格式数据
+					type:'post',//HTTP请求类型
+					timeout:10000,//超时时间设置为10秒；
+					headers:{'Content-Type':'application/json'},	              
+					success:function(data){
+						if(data.code == 200){
+							var lamppage = plus.webview.getWebviewById('pending_advice')
+							mui.fire(lamppage,'customEvent');
+							mui.back()
+						}
+					},
+					error:function(xhr,type,errorThrown){
+						console.log(errorThrown)
+					}
+				});
+			})
+		})
+	</script>
+	<style type="text/css">
+		p{
+		  padding-left: 5%;
+		  padding-right: 5%;
+		  word-wrap: break-word;
+		  word-break: break-all;
+		  overflow: hidden;
+		  background-color: #FFFFFF;
+		  font-size: 20px;
+		  line-height: 35px;
+		}
+	</style>
+
+</html>

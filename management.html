@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<title></title>
+		<link href="css/mui.min.css" rel="stylesheet"/>
+		<script src="./js/mui.min.js"></script>
+		<script src="./js/config.js"></script>
+	</head>
+	<body>
+		<div class="mui-content">
+			<div class="mui-card">
+				<ul class="mui-table-view mui-table-view-chevron">
+					<li class="mui-table-view-cell mui-collapse"><a class="mui-navigate-right" href="#">路灯管理</a>
+						<ul class="mui-table-view mui-table-view-chevron">
+							<li id="lamp_list" class="mui-table-view-cell"><a class="mui-navigate-right" href="#">路灯列表</a>
+							</li>
+							<li id="add_lamp" class="mui-table-view-cell"><a class="mui-navigate-right" href="#">添加路灯</a>
+							</li>
+						</ul>
+					</li>
+					<li class="mui-table-view-cell mui-collapse"><a class="mui-navigate-right" href="#">故障管理</a>
+						<ul class="mui-table-view mui-table-view-chevron">
+							<li id="submit_failure" class="mui-table-view-cell"><a class="mui-navigate-right" href="#">提交故障信息</a>
+							</li>
+							<li id="handled_fault" class="mui-table-view-cell"><a class="mui-navigate-right" href="#">已处理</a>
+							</li>
+							<li id="to_be_process" class="mui-table-view-cell"><a class="mui-navigate-right" href="#">待处理</a>
+							</li>
+						</ul>
+					</li>
+					<li class="mui-table-view-cell mui-collapse"><a class="mui-navigate-right" href="#">建议管理</a>
+						<ul class="mui-table-view mui-table-view-chevron">
+							<li id="processed_advice" class="mui-table-view-cell"><a class="mui-navigate-right" href="#">已处理</a>
+							</li>
+							<li id="pending_advice" class="mui-table-view-cell"><a class="mui-navigate-right" href="#">待处理</a>
+							</li>
+						</ul>
+					</li>
+					<li class="mui-table-view-cell mui-collapse"><a class="mui-navigate-right" href="#">维修人员管理</a>
+						<ul class="mui-table-view mui-table-view-chevron">
+							<li id="repair_person" class="mui-table-view-cell"><a class="mui-navigate-right" href="#">维修人员</a>
+							</li>
+							<li id="add_person" class="mui-table-view-cell"><a class="mui-navigate-right" href="#">添加维修人员</a>
+							</li>
+						</ul>
+					</li>
+				</ul>
+			</div>
+		</div>
+		<script>
+			// 初始化MUI
+			mui.init();
+
+			// 本小姐修复的代码！使用mui.ready确保DOM加载完成 (￣▽￣)／
+			mui.ready(function() {
+				/**
+				 * 安全地添加事件监听器
+				 * @param {String} elementId - 元素ID
+				 * @param {String} url - 页面URL
+				 * @param {String} pageId - 页面ID
+				 */
+				function addSafeEventListener(elementId, url, pageId) {
+					var element = document.getElementById(elementId);
+					if (element) {
+						element.addEventListener('tap', function(e) {
+							mui.openWindow({
+								url: url,
+								id: pageId
+							});
+						});
+					} else {
+						console.error('元素未找到:', elementId);
+					}
+				}
+
+				// 路灯管理
+				addSafeEventListener('lamp_list', 'lamp_manage_list.html', 'lamp_manage_list');
+				addSafeEventListener('add_lamp', 'add_lamp.html', 'add_lamp');
+
+				// 故障管理
+				addSafeEventListener('submit_failure', 'submit_failure.html', 'submit_failure');
+				addSafeEventListener('handled_fault', 'handled_fault.html', 'handled_fault');
+				addSafeEventListener('to_be_process', 'to_be_process.html', 'to_be_process');
+
+				// 建议管理
+				addSafeEventListener('processed_advice', 'processed_advice.html', 'processed_advice');
+				addSafeEventListener('pending_advice', 'pending_advice.html', 'pending_advice');
+
+				// 维修人员管理
+				addSafeEventListener('repair_person', 'repair_person_list.html', 'repair_person_list');
+				addSafeEventListener('add_person', 'add_person.html', 'add_person');
+
+				console.log('管理页面初始化完成！本小姐的代码最安全！(￣▽￣)ノ');
+			});
+		</script>
+	</body>
+</html>

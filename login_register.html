@@ -1,0 +1,414 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>注册</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+	<script src="js/config.js"></script>
+	<script src="js/mui.min.js"></script>
+	<script src="js/app.js"></script>
+	<link href="css/mui.css" rel="stylesheet" />
+</head>
+<body>
+	<!-- 导航栏 -->
+	<header class="page-header">
+		<button class="back-button" id="backButton">
+			<!-- 左箭头图标：简单的线性箭头 -->
+			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+			</svg>
+		</button>
+		<h1 class="page-title">注册</h1>
+	</header>
+
+	<!-- 内容区域 -->
+	<div class="page-content">
+		<!-- 欢迎文字 -->
+		<div class="welcome-section">
+			<h2 class="welcome-title">创建账号</h2>
+			<p class="welcome-subtitle">填写信息以注册路灯管理系统账号</p>
+		</div>
+
+		<!-- 注册表单卡片 -->
+		<div class="form-card">
+			<!-- 用户名输入框 -->
+			<div class="input-group">
+				<div class="input-icon">
+					<!-- 用户图标：圆形头部 + 弧形身体 -->
+					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/>
+						<path d="M4 17 C4 13 6 12 10 12 C14 12 16 13 16 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</div>
+				<input id="account" type="text" class="input-field" placeholder="请输入用户名"/>
+			</div>
+
+			<!-- 手机号输入框 -->
+			<div class="input-group">
+				<div class="input-icon">
+					<!-- 手机图标：矩形手机轮廓 -->
+					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<rect x="6" y="2" width="8" height="16" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+						<line x1="8" y1="15" x2="12" y2="15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</div>
+				<input id="phone" type="tel" class="input-field" placeholder="请输入手机号"/>
+			</div>
+
+			<!-- 密码输入框 -->
+			<div class="input-group">
+				<div class="input-icon">
+					<!-- 锁图标：矩形锁体 + 圆形锁扣 -->
+					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<rect x="4" y="9" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/>
+						<path d="M7 9 V6 C7 4.5 8 3 10 3 C12 3 13 4.5 13 6 V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</div>
+				<input id="password" type="password" class="input-field" placeholder="请输入密码（至少6位）"/>
+				<button class="toggle-password" id="togglePassword">
+					<!-- 眼睛图标（显示密码） -->
+					<svg class="eye-open" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M2 10 C2 10 5 4 10 4 C15 4 18 10 18 10 C18 10 15 16 10 16 C5 16 2 10 2 10 Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+						<circle cx="10" cy="10" r="2" stroke="currentColor" stroke-width="1.5"/>
+					</svg>
+					<!-- 眼睛图标（隐藏密码） -->
+					<svg class="eye-closed" style="display:none;" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M2 10 C2 10 5 4 10 4 C15 4 18 10 18 10 C18 10 15 16 10 16 C5 16 2 10 2 10 Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+						<circle cx="10" cy="10" r="2" stroke="currentColor" stroke-width="1.5"/>
+						<line x1="3" y1="3" x2="17" y2="17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</button>
+			</div>
+
+			<!-- 用户协议提示 -->
+			<div class="agreement-section">
+				<p class="agreement-text">注册即表示同意<a href="#" class="agreement-link">用户协议</a>和<a href="#" class="agreement-link">隐私政策</a></p>
+			</div>
+
+			<!-- 注册按钮 -->
+			<button id="reg" type="button" class="btn-register">注册</button>
+		</div>
+
+		<!-- 底部提示 -->
+		<div class="footer-tip">
+			<p>已有账号？<a href="#" class="link-login" id="toLogin">立即登录</a></p>
+		</div>
+	</div>
+</body>
+<script>
+	mui.init({
+		swipeBack: true, // 启用右滑关闭功能
+		beforeback: function() {
+			plus.navigator.setStatusBarBackground("#F7F7F7");
+			return true;
+		}
+	});
+
+	mui.plusReady(function() {
+		plus.navigator.setStatusBarBackground("#FFFFFF");
+
+		var regButton = document.getElementById('reg');
+		var accountBox = document.getElementById('account');
+		var passwordBox = document.getElementById('password');
+		var phoneBox = document.getElementById('phone');
+		var togglePasswordButton = document.getElementById('togglePassword');
+		var backButton = document.getElementById('backButton');
+		var toLoginLink = document.getElementById('toLogin');
+
+		// 注册逻辑
+		regButton.addEventListener('tap', function(event) {
+			var loginInfo = {
+				account: accountBox.value,
+				password: passwordBox.value,
+				phone: phoneBox.value
+			};
+			app.reg(loginInfo, function(err) {
+				if (err) {
+					plus.nativeUI.toast(err);
+					return;
+				}
+			});
+		});
+
+		// 密码显示/隐藏切换
+		togglePasswordButton.addEventListener('tap', function(event) {
+			var eyeOpen = this.querySelector('.eye-open');
+			var eyeClosed = this.querySelector('.eye-closed');
+
+			if (passwordBox.type === 'password') {
+				passwordBox.type = 'text';
+				eyeOpen.style.display = 'none';
+				eyeClosed.style.display = 'block';
+			} else {
+				passwordBox.type = 'password';
+				eyeOpen.style.display = 'block';
+				eyeClosed.style.display = 'none';
+			}
+		});
+
+		// 返回按钮
+		backButton.addEventListener('tap', function(event) {
+			mui.back();
+		});
+
+		// 登录链接
+		toLoginLink.addEventListener('tap', function(event) {
+			event.preventDefault();
+			mui.back(); // 直接返回上一页（login_main.html）
+		});
+	});
+</script>
+<style>
+	/* ==================== 全局重置 ==================== */
+	* {
+		margin: 0;
+		padding: 0;
+		box-sizing: border-box;
+	}
+
+	body {
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+		background-color: #F7F7F7;
+		color: #333333;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* ==================== 导航栏 ==================== */
+	.page-header {
+		position: relative;
+		height: 56px;
+		background-color: #FFFFFF;
+		border-bottom: 1px solid #E5E5E5;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 16px;
+	}
+
+	.back-button {
+		position: absolute;
+		left: 8px;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 40px;
+		height: 40px;
+		background: transparent;
+		border: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #333333;
+		cursor: pointer;
+		transition: background-color 0.2s ease;
+		border-radius: 50%;
+	}
+
+	.back-button:active {
+		background-color: #F0F0F0;
+	}
+
+	.page-title {
+		font-size: 17px;
+		font-weight: 600;
+		color: #1A1A1A;
+	}
+
+	/* ==================== 内容区域 ==================== */
+	.page-content {
+		flex: 1;
+		padding: 24px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* ==================== 欢迎区域 ==================== */
+	.welcome-section {
+		margin-bottom: 32px;
+		animation: fadeInDown 0.5s ease-out;
+	}
+
+	.welcome-title {
+		font-size: 26px;
+		font-weight: 600;
+		color: #1A1A1A;
+		margin-bottom: 8px;
+	}
+
+	.welcome-subtitle {
+		font-size: 14px;
+		color: #999999;
+	}
+
+	/* ==================== 表单卡片 ==================== */
+	.form-card {
+		background: #FFFFFF;
+		border-radius: 12px;
+		padding: 24px;
+		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+		animation: fadeInUp 0.5s ease-out 0.1s both;
+	}
+
+	/* ==================== 输入框组 ==================== */
+	.input-group {
+		position: relative;
+		margin-bottom: 16px;
+		display: flex;
+		align-items: center;
+		background-color: #F7F7F7;
+		border-radius: 8px;
+		border: 1px solid #E5E5E5;
+		transition: all 0.2s ease;
+	}
+
+	.input-group:focus-within {
+		border-color: #07C160;
+		background-color: #FFFFFF;
+	}
+
+	.input-icon {
+		flex: 0 0 auto;
+		width: 48px;
+		height: 48px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #999999;
+	}
+
+	.input-field {
+		flex: 1;
+		height: 48px;
+		border: none;
+		background: transparent;
+		font-size: 15px;
+		color: #333333;
+		outline: none;
+		padding-right: 12px;
+	}
+
+	.input-field::placeholder {
+		color: #CCCCCC;
+	}
+
+	.toggle-password {
+		flex: 0 0 auto;
+		width: 48px;
+		height: 48px;
+		background: transparent;
+		border: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #999999;
+		cursor: pointer;
+		transition: color 0.2s ease;
+	}
+
+	.toggle-password:active {
+		color: #07C160;
+	}
+
+	/* ==================== 用户协议 ==================== */
+	.agreement-section {
+		margin-bottom: 24px;
+	}
+
+	.agreement-text {
+		font-size: 12px;
+		color: #999999;
+		text-align: center;
+		line-height: 1.6;
+	}
+
+	.agreement-link {
+		color: #07C160;
+		text-decoration: none;
+		transition: opacity 0.2s ease;
+	}
+
+	.agreement-link:active {
+		opacity: 0.7;
+	}
+
+	/* ==================== 注册按钮 ==================== */
+	.btn-register {
+		width: 100%;
+		height: 48px;
+		background-color: #07C160;
+		border: none;
+		border-radius: 8px;
+		color: #FFFFFF;
+		font-size: 16px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.btn-register:active {
+		background-color: #06AD56;
+		transform: scale(0.98);
+	}
+
+	/* ==================== 底部提示 ==================== */
+	.footer-tip {
+		margin-top: auto;
+		padding-top: 24px;
+		text-align: center;
+		animation: fadeInUp 0.5s ease-out 0.2s both;
+	}
+
+	.footer-tip p {
+		font-size: 14px;
+		color: #999999;
+	}
+
+	.link-login {
+		color: #07C160;
+		text-decoration: none;
+		font-weight: 500;
+		transition: opacity 0.2s ease;
+	}
+
+	.link-login:active {
+		opacity: 0.7;
+	}
+
+	/* ==================== 动画 ==================== */
+	@keyframes fadeInDown {
+		from {
+			opacity: 0;
+			transform: translateY(-20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes fadeInUp {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* ==================== 响应式优化 ==================== */
+	@media (max-width: 375px) {
+		.welcome-title {
+			font-size: 24px;
+		}
+
+		.form-card {
+			padding: 20px;
+		}
+	}
+</style>
+</html>

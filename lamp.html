@@ -1,0 +1,593 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>路灯列表</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+	<style>
+		/* ==================== 全局样式 ==================== */
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+			background-color: #F5F5F5;
+			color: #000000;
+			font-size: 14px;
+			line-height: 1.6;
+		}
+
+		/* ==================== 导航栏 ==================== */
+		.nav-bar {
+			background-color: #FFFFFF;
+			height: 44px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-bottom: 1px solid #E5E5E5;
+			position: sticky;
+			top: 0;
+			z-index: 100;
+		}
+
+		.nav-title {
+			font-size: 17px;
+			font-weight: 600;
+			color: #000000;
+		}
+
+		/* ==================== 统计卡片 ==================== */
+		.stats-card {
+			background-color: #FFFFFF;
+			margin: 10px 16px;
+			border-radius: 8px;
+			padding: 16px;
+		}
+
+		.stats-row {
+			display: flex;
+			justify-content: space-between;
+		}
+
+		.stat-item {
+			flex: 1;
+			text-align: center;
+		}
+
+		.stat-number {
+			font-size: 28px;
+			font-weight: 600;
+			color: #000000;
+			line-height: 1.2;
+		}
+
+		.stat-label {
+			font-size: 12px;
+			color: #888888;
+			margin-top: 4px;
+		}
+
+		.stat-item.highlight .stat-number {
+			color: #07C160;
+		}
+
+		.stat-divider {
+			width: 1px;
+			background-color: #E5E5E5;
+			margin: 0 8px;
+		}
+
+		/* ==================== 列表容器 ==================== */
+		.list-container {
+			margin: 10px 0;
+		}
+
+		.list-section {
+			background-color: #FFFFFF;
+			margin-bottom: 10px;
+		}
+
+		/* ==================== 列表项 ==================== */
+		.list-item {
+			display: flex;
+			align-items: center;
+			padding: 16px;
+			border-bottom: 1px solid #E5E5E5;
+			cursor: pointer;
+			transition: background-color 0.2s;
+		}
+
+		.list-item:last-child {
+			border-bottom: none;
+		}
+
+		.list-item:active {
+			background-color: #F5F5F5;
+		}
+
+		/* 状态图标 */
+		.status-icon {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin-right: 12px;
+			flex-shrink: 0;
+		}
+
+		.status-icon svg {
+			width: 20px;
+			height: 20px;
+		}
+
+		.status-icon.status-normal {
+			background-color: #F0FFF4;
+		}
+
+		.status-icon.status-stop {
+			background-color: #FFF7E6;
+		}
+
+		.status-icon.status-fault {
+			background-color: #FFF1F0;
+		}
+
+		/* 内容区 */
+		.item-content {
+			flex: 1;
+			min-width: 0;
+		}
+
+		.item-title {
+			font-size: 16px;
+			font-weight: 600;
+			color: #000000;
+			margin-bottom: 4px;
+		}
+
+		.item-meta {
+			display: flex;
+			align-items: center;
+			font-size: 13px;
+			color: #888888;
+			margin-top: 4px;
+		}
+
+		.item-meta-item {
+			margin-right: 12px;
+		}
+
+		/* 状态标签 */
+		.status-badge {
+			display: inline-block;
+			padding: 2px 8px;
+			border-radius: 2px;
+			font-size: 12px;
+			font-weight: 500;
+		}
+
+		.status-badge.normal {
+			background-color: #F0FFF4;
+			color: #07C160;
+		}
+
+		.status-badge.stop {
+			background-color: #FFF7E6;
+			color: #FA8C16;
+		}
+
+		.status-badge.fault {
+			background-color: #FFF1F0;
+			color: #F5222D;
+		}
+
+		/* 右侧箭头 */
+		.item-arrow {
+			margin-left: 8px;
+			flex-shrink: 0;
+		}
+
+		.item-arrow svg {
+			width: 16px;
+			height: 16px;
+			fill: #C7C7CC;
+		}
+
+		/* ==================== 加载提示 ==================== */
+		.load-more {
+			text-align: center;
+			padding: 16px;
+			color: #888888;
+			font-size: 14px;
+			cursor: pointer;
+			transition: background-color 0.2s;
+		}
+
+		.load-more:active {
+			background-color: #F5F5F5;
+		}
+
+		/* ==================== 空状态 ==================== */
+		.empty-state {
+			text-align: center;
+			padding: 60px 20px;
+		}
+
+		.empty-icon {
+			width: 80px;
+			height: 80px;
+			margin: 0 auto 16px;
+			opacity: 0.3;
+		}
+
+		.empty-text {
+			font-size: 14px;
+			color: #888888;
+		}
+	</style>
+</head>
+
+<body>
+	<!-- 统计卡片 -->
+	<div class="stats-card" style="margin-top: 10px;">
+		<div class="stats-row">
+			<div class="stat-item">
+				<div class="stat-number" id="totalCount">0</div>
+				<div class="stat-label">路灯总数</div>
+			</div>
+			<div class="stat-divider"></div>
+			<div class="stat-item highlight">
+				<div class="stat-number" id="normalCount">0</div>
+				<div class="stat-label">正常运行</div>
+			</div>
+			<div class="stat-divider"></div>
+			<div class="stat-item">
+				<div class="stat-number" id="stopCount">0</div>
+				<div class="stat-label">已停止</div>
+			</div>
+			<div class="stat-divider"></div>
+			<div class="stat-item">
+				<div class="stat-number" id="faultCount">0</div>
+				<div class="stat-label">故障</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- 列表容器 -->
+	<div class="list-container">
+		<div class="list-section" id="lampList"></div>
+	</div>
+
+	<!-- 加载更多 -->
+	<div class="load-more" id="loadMoreBtn">上拉加载更多</div>
+
+	<script src="./js/config.js"></script>
+
+	<script>
+
+		// SVG图标
+		const icons = {
+			normal: '<svg viewBox="0 0 24 24" fill="none" stroke="#07C160" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>',
+			stop: '<svg viewBox="0 0 24 24" fill="none" stroke="#FA8C16" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>',
+			fault: '<svg viewBox="0 0 24 24" fill="none" stroke="#F5222D" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>',
+			arrow: '<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2"/></svg>'
+		};
+
+		// 全局变量
+		var list = null;
+		var data_arr = [];
+		var pageNum = 1;
+		var allLoadedData = []; // 存储所有已加载的数据
+		var deletedIds = []; // 存储已删除的路灯ID
+		var allLampsForStats = []; // 存储用于统计的所有路灯数据
+
+		// 从localStorage读取已删除的ID列表
+		function loadDeletedIds() {
+			try {
+				var stored = localStorage.getItem('deletedLampIds');
+				if (stored) {
+					deletedIds = JSON.parse(stored);
+					console.log('从localStorage加载已删除ID:', deletedIds);
+				}
+			} catch(e) {
+				console.log('读取localStorage失败:', e);
+			}
+		}
+
+		// 保存已删除的ID列表到localStorage
+		function saveDeletedIds() {
+			try {
+				localStorage.setItem('deletedLampIds', JSON.stringify(deletedIds));
+				console.log('保存已删除ID到localStorage:', deletedIds);
+			} catch(e) {
+				console.log('保存到localStorage失败:', e);
+			}
+		}
+
+		// 渲染列表项（本小姐添加了类型转换和调试！(￣▽￣)ノ）
+		function renderLampItem(lamp) {
+			let statusClass, statusText, statusIcon;
+
+			// 统一转换为字符串类型进行比较（本小姐的改进！）
+			var lampStatus = String(lamp.status);
+
+			if (lampStatus === "0") {
+				statusClass = "stop";
+				statusText = "已停止";
+				statusIcon = icons.stop;
+			} else if (lampStatus === "1") {
+				statusClass = "normal";
+				statusText = "正常";
+				statusIcon = icons.normal;
+			} else if (lampStatus === "2") {
+				statusClass = "fault";
+				statusText = "故障";
+				statusIcon = icons.fault;
+			} else {
+				// 未知状态，默认显示故障（本小姐添加的容错！）
+				console.warn('未知的路灯状态:', lamp.status, '类型:', typeof lamp.status);
+				statusClass = "fault";
+				statusText = "未知(" + lamp.status + ")";
+				statusIcon = icons.fault;
+			}
+
+			return `
+				<div class="list-item" data-id="${lamp.id}">
+					<div class="status-icon status-${statusClass}">
+						${statusIcon}
+					</div>
+					<div class="item-content">
+						<div class="item-title">${lamp.area}</div>
+						<div class="item-meta">
+							<span class="item-meta-item">
+								<span class="status-badge ${statusClass}">${statusText}</span>
+							</span>
+							<span class="item-meta-item">${lamp.lightId}</span>
+						</div>
+					</div>
+					<div class="item-arrow">
+						${icons.arrow}
+					</div>
+				</div>
+			`;
+		}
+
+		// 创建Fragment
+		var createFragment = function(count) {
+			console.log('createFragment: 准备创建', count, '个元素');
+			var fragment = document.createDocumentFragment();
+			for (var i = 0; i < count; i++) {
+				var tempDiv = document.createElement('div');
+				tempDiv.innerHTML = renderLampItem(data_arr[i]);
+				var item = tempDiv.firstElementChild;
+				if (item) {
+					fragment.appendChild(item);
+					console.log('添加第', i + 1, '个元素:', data_arr[i].area);
+				} else {
+					console.error('第', i + 1, '个元素创建失败');
+				}
+			}
+			console.log('fragment包含', fragment.childNodes.length, '个子节点');
+			return fragment;
+		};
+
+		// 加载数据
+		function load_new_data() {
+			console.log('load_new_data 被调用');
+
+			// 调用实际API获取数据（使用config.js配置）
+			var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsFindAll) + '/' + pageNum;
+			var xhr = new XMLHttpRequest();
+			xhr.open('GET', apiUrl, true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.timeout = appConfig.api.timeout; // 使用配置的超时时间
+
+			xhr.onload = function() {
+				if (xhr.status === 200) {
+					try {
+						var data = JSON.parse(xhr.responseText);
+						console.log('📊 加载第', pageNum, '页数据:', data);
+						if(data != null && data.length > 0){
+							data_arr = data;
+							// 打印第一条数据用于调试
+							if(data[0]) {
+								console.log('第一条路灯数据:', data[0]);
+								console.log('status字段:', data[0].status, '类型:', typeof data[0].status);
+							}
+							// 保存到全局数组用于统计
+							allLampsForStats = allLampsForStats.concat(data);
+							list.appendChild(createFragment(data_arr.length));
+							pageNum = pageNum + 1;
+							updateStats();
+						} else {
+							document.getElementById('loadMoreBtn').textContent = '已加载全部';
+							document.getElementById('loadMoreBtn').style.color = '#C7C7CC';
+							// 即使没有更多数据，也要更新统计
+							updateStats();
+						}
+					} catch(e) {
+						console.log('数据解析错误', e);
+					}
+				}
+			};
+
+			xhr.onerror = function() {
+				console.log('网络错误');
+			};
+
+			xhr.send();
+		}
+
+		// 更新统计（本小姐优化的统计逻辑！(￣▽￣)ノ）
+		function updateStats() {
+
+			// 本小姐改进的逻辑：从已加载的路灯数据中实时计算统计！
+			if (allLampsForStats && allLampsForStats.length > 0) {
+				var totalCount = allLampsForStats.length;
+				var normalCount = 0;
+				var stopCount = 0;
+				var faultCount = 0;
+
+				for (var i = 0; i < allLampsForStats.length; i++) {
+					var lamp = allLampsForStats[i];
+					// 统一转换为字符串类型（本小姐的改进！）
+					var lampStatus = String(lamp.status);
+					if (lampStatus === "1") {
+						normalCount++;
+					} else if (lampStatus === "0") {
+						stopCount++;
+					} else if (lampStatus === "2") {
+						faultCount++;
+					}
+				}
+
+				document.getElementById('totalCount').textContent = totalCount;
+				document.getElementById('normalCount').textContent = normalCount;
+				document.getElementById('stopCount').textContent = stopCount;
+				document.getElementById('faultCount').textContent = faultCount;
+
+				console.log('统计更新（从数据计算）: 总数=' + totalCount + ', 正常=' + normalCount + ', 停止=' + stopCount + ', 故障=' + faultCount);
+			} else {
+				// 如果没有数据，显示0
+				document.getElementById('totalCount').textContent = '0';
+				document.getElementById('normalCount').textContent = '0';
+				document.getElementById('stopCount').textContent = '0';
+				document.getElementById('faultCount').textContent = '0';
+				console.log('统计更新: 暂无数据');
+			}
+		}
+
+		// 初始化函数
+		function init() {
+			console.log('初始化开始');
+
+			// 加载已删除的ID列表
+			loadDeletedIds();
+
+			// 获取DOM元素
+			list = document.getElementById("lampList");
+			var loadMoreBtn = document.getElementById('loadMoreBtn');
+
+			console.log('list元素:', list);
+			console.log('loadMoreBtn元素:', loadMoreBtn);
+
+			if (!list) {
+				console.error('找不到lampList元素！');
+				return;
+			}
+
+			if (!loadMoreBtn) {
+				console.error('找不到loadMoreBtn元素！');
+				return;
+			}
+
+			// 点击事件 - 跳转到详情页
+			list.addEventListener('click', function(e) {
+				var listItem = e.target.closest('.list-item');
+				if (listItem) {
+					var lampId = listItem.dataset.id;
+					console.log('点击路灯ID:', lampId);
+					// 使用plus.webview打开详情页（如果在App环境中）
+					if(typeof plus !== 'undefined') {
+						plus.webview.create('lamp_details.html?id=' + lampId, 'lamp_details', {}).show('slide-in-right', 300);
+					} else {
+						// 浏览器环境下使用window.open
+						window.location.href = 'lamp_details.html?id=' + lampId;
+					}
+				}
+			});
+
+			// 滚动加载
+			window.addEventListener('scroll', function() {
+				var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+				var windowHeight = window.innerHeight;
+				var documentHeight = document.documentElement.scrollHeight;
+
+				if (scrollTop + windowHeight >= documentHeight - 50) {
+					load_new_data();
+				}
+			});
+
+			// 点击加载更多按钮
+			loadMoreBtn.addEventListener('click', function() {
+				console.log('点击加载更多');
+				if (this.textContent !== '已加载全部') {
+					load_new_data();
+				}
+			});
+
+			// 页面显示时刷新
+			document.addEventListener("onshow", function(){
+				console.log('页面onshow');
+				if (list) {
+					list.innerHTML = '';
+					pageNum = 1;
+					allLoadedData = []; // 清空已加载数据
+					allLampsForStats = []; // 清空统计数据（本小姐新增！）
+					load_new_data();
+				}
+			});
+
+			// APP环境：监听来自详情页的删除通知
+			if(typeof plus !== 'undefined') {
+				// 接收删除通知
+				window.addEventListener('lampDeleted', function(e) {
+					console.log('收到删除通知，ID:', e.detail.id);
+					// 添加到已删除列表
+					if (deletedIds.indexOf(e.detail.id) === -1) {
+						deletedIds.push(e.detail.id);
+						saveDeletedIds(); // 保存到localStorage
+					}
+					// 刷新列表
+					list.innerHTML = '';
+					pageNum = 1;
+					allLoadedData = [];
+					allLampsForStats = []; // 清空统计数据（本小姐新增！）
+					load_new_data();
+				});
+				console.log('已添加删除通知监听');
+			}
+
+			// 加载数据
+			console.log('开始加载统计和列表数据');
+			load_new_data(); // 先加载数据，数据加载完成后会自动调用updateStats()
+			console.log('初始化完成');
+		}
+
+		// APP环境和浏览器环境兼容初始化
+		(function() {
+			var hasInitialized = false;
+
+			function startInit() {
+				if (hasInitialized) {
+					console.log('已经初始化过了，跳过');
+					return;
+				}
+				hasInitialized = true;
+				console.log('准备初始化');
+				init();
+			}
+
+			// 在APP环境中，等待plusready
+			document.addEventListener('plusready', function() {
+				console.log('plusready触发');
+				startInit();
+			}, false);
+
+			// 同时也监听DOMContentLoaded（仅用于浏览器环境）
+			document.addEventListener('DOMContentLoaded', function() {
+				console.log('DOMContentLoaded触发');
+				// 延迟100ms，如果是APP环境，plusready应该已经触发了
+				setTimeout(function() {
+					startInit();
+				}, 100);
+			});
+		})();
+	</script>
+</body>
+</html>

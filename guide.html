@@ -1,0 +1,37 @@
+<!doctype html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title></title>
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<link href="css/mui.css" rel="stylesheet" />
+		<script src="js/mui.js"></script>
+	</head>
+
+	<body>
+		
+		
+	</body>
+	<script type="text/javascript">
+		mui.init()
+		mui.plusReady(function () {
+		    var user_id = plus.storage.getItem('account'); //读取user_id的值
+		    if(user_id == null){    //判断是否为空，如果为空，则打开登录页面,否则打开主页面
+		        mui.openWindow({
+		            url:'login_main.html',
+					show:{
+						aniShow: "none"
+					}
+				});
+		    }else{
+				mui.openWindow({
+				    url:'index.html',
+					show:{
+						aniShow: "none"
+					}
+				});
+			}
+		});
+	</script>
+</html>

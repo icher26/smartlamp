@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>路灯管理系统</title>
+	<meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<link rel="stylesheet" href="css/mui.min.css">
+</head>
+<body>
+	<!-- 顶部导航栏 -->
+	<header class="custom-nav-bar">
+		<h1 id="title" class="nav-title">总览</h1>
+		<button class="menu-button">
+			<!-- 汉堡菜单图标：三条横线 -->
+			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<line x1="4" y1="7" x2="20" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+				<line x1="4" y1="12" x2="20" y2="12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+				<line x1="4" y1="17" x2="20" y2="17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+			</svg>
+		</button>
+	</header>
+
+	<!-- 底部Tab栏 -->
+	<nav class="custom-tab-bar">
+		<a id="defaultTab" class="tab-item tab-active" href="overview.html">
+			<span class="tab-icon">
+				<!-- 柱状图图标：三个垂直柱子 -->
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<rect x="4" y="10" width="4" height="10" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+					<rect x="10" y="6" width="4" height="14" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+					<rect x="16" y="12" width="4" height="8" rx="1" stroke="currentColor" stroke-width="2" fill="none"/>
+				</svg>
+			</span>
+			<span class="tab-label">总览</span>
+		</a>
+		<a id="lamp" class="tab-item" href="lamp.html">
+			<span class="tab-icon">
+				<!-- 灯泡图标：圆形灯泡轮廓 -->
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<circle cx="12" cy="10" r="4" stroke="currentColor" stroke-width="2"/>
+					<path d="M12 14 L12 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+					<path d="M10 18 L14 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+					<path d="M12 6 L12 4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+					<path d="M6 10 L4 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+					<path d="M20 10 L18 10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+				</svg>
+			</span>
+			<span class="tab-label">Lamp</span>
+		</a>
+		<a id="management" class="tab-item" href="management.html">
+			<span class="tab-icon">
+				<!-- 齿轮图标：圆形中心 + 8个齿 -->
+				<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+					<circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/>
+					<path d="M12 2 L12 5 M12 19 L12 22 M2 12 L5 12 M19 12 L22 12 M4.9 4.9 L7.05 7.05 M16.95 16.95 L19.1 19.1 M4.9 19.1 L7.05 16.95 M16.95 7.05 L19.1 4.9" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+				</svg>
+			</span>
+			<span class="tab-label">管理</span>
+		</a>
+	</nav>
+
+	<script src="./js/mui.min.js"></script>
+	<script type="text/javascript" charset="utf-8">
+		var showMenu = false, mode = 'main-move';
+		var clickNum = 0;
+		mui.init();
+		mui.back = function(event) {
+			if(showMenu){
+				// 菜单处于显示状态，返回键应该先关闭菜单，阻止主窗口执行mui.back逻辑
+				plus.webview.currentWebview().setStyle({mask:'none'})
+				_closeMenu();
+				return false;
+			}
+			clickNum++;
+			if(clickNum > 1) {
+				plus.runtime.quit();
+			} else {
+				mui.toast("再按一次退出应用");
+			}
+			setTimeout(function() {
+				clickNum = 0
+			}, 2000);
+			return false;
+		}
+
+		var subpages = ['overview.html', 'lamp.html', 'management.html'];
+		var subpage_style = {
+			top: '56px',  // 顶部导航栏高度
+			bottom: '56px'  // 底部Tab栏高度
+		};
+
+		var aniShow = {};
+
+		// 创建子页面，首个选项卡页面显示，其它均隐藏
+		mui.plusReady(function() {
+			var user_id = plus.storage.getItem('account'); // 读取user_id的值
+			if(user_id == null){    // 判断是否为空，如果为空，则打开登录页面，否则打开主页面
+				mui.openWindow({
+					url:'login_main.html'
+				});
+			}
+			var self = plus.webview.currentWebview();
+			for (var i = 0; i < 3; i++) {
+				var temp = {};
+				var sub = plus.webview.create(subpages[i], subpages[i], subpage_style);
+				if (i > 0) {
+					sub.hide();
+				}else{
+					temp[subpages[i]] = "true";
+					mui.extend(aniShow,temp);
+				}
+				self.append(sub);
+			}
+			main = plus.webview.currentWebview();
+			// setTimeout的目的是等待窗体动画结束后，再执行create webview操作，避免资源竞争
+			setTimeout(function () {
+				menu = mui.preload({
+					id: 'offcanvas-drag-left-plus-menu',
+					url: 'offcanvas-drag-left-plus-menu.html',
+					styles: {
+						left: "30%",
+						width: '70%',
+						zindex: 9997
+					}
+				});
+			},300);
+
+			plus.webview.currentWebview().addEventListener("maskClick", close_card, false);
+		});
+
+		close_card = function() {
+			plus.webview.currentWebview().setStyle({
+				mask: "none"
+			});
+			_closeMenu();
+		}
+
+		// 当前激活选项
+		var activeTab = subpages[0];
+		var title = document.getElementById("title");
+
+		// 选项卡点击事件 - 使用MUI事件委托
+		mui('.custom-tab-bar').on('tap', '.tab-item', function(e) {
+			var targetTab = this.getAttribute('href');
+			if (targetTab == activeTab) {
+				return;
+			}
+			// 更换标题
+			title.innerHTML = this.querySelector('.tab-label').innerHTML;
+			// 显示目标选项卡
+			// 若为iOS平台或非首次显示，则直接显示
+			if(mui.os.ios||aniShow[targetTab]){
+				plus.webview.show(targetTab);
+			}else{
+				// 否则，使用fade-in动画，且保存变量
+				var temp = {};
+				temp[targetTab] = "true";
+				mui.extend(aniShow,temp);
+				plus.webview.show(targetTab,"fade-in",300);
+			}
+			// 隐藏当前
+			plus.webview.hide(activeTab);
+			// 更改当前活跃的选项卡
+			activeTab = targetTab;
+
+			// 更新Tab样式
+			var currentActive = document.querySelector('.tab-item.tab-active');
+			if (currentActive) {
+				currentActive.classList.remove('tab-active');
+			}
+			this.classList.add('tab-active');
+		});
+
+		// 自定义事件，模拟点击"首页选项卡"
+		document.addEventListener('gohome', function() {
+			var defaultTab = document.getElementById("defaultTab");
+			// 模拟首页点击
+			mui.trigger(defaultTab, 'tap');
+		});
+
+		function openMenu() {
+			if (!showMenu) {
+				// 侧滑菜单处于隐藏状态，则立即显示出来
+				menu.show('none', 0, function() {
+					// 主窗体开始侧滑
+					main.setStyle({
+						left: '-70%',
+						transition: {
+							duration: 200
+						}
+					});
+				});
+				// 显示主窗体遮罩
+				plus.webview.currentWebview().setStyle({
+					mask: "rgba(0,0,0,0.5)"
+				});
+				showMenu = true;
+			}
+		}
+
+		function _closeMenu() {
+			if (showMenu) {
+				// 主窗体开始侧滑
+				main.setStyle({
+					left: '0',
+					transition: {
+						duration: 200
+					}
+				});
+				// 等窗体动画结束后，隐藏菜单webview，节省资源
+				setTimeout(function() {
+					menu.hide();
+				}, 250);
+				showMenu = false;
+			}
+		}
+
+		mui('.mui-input-group').on('change', 'input', function() {
+			if (this.checked) {
+				// 仅主窗口移动的时候，menu页面的zindex值要低一点
+				menu.setStyle({left:'30%',zindex:9997});
+				mode = 'main-move';
+			}
+		});
+
+		document.querySelector('.menu-button').addEventListener('tap', openMenu);
+	</script>
+</body>
+<style>
+	/* ==================== 全局重置 ==================== */
+	* {
+		touch-action: none;
+		margin: 0;
+		padding: 0;
+		box-sizing: border-box;
+	}
+
+	body {
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+		background-color: #F7F7F7;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+
+	/* ==================== 顶部导航栏 ==================== */
+	.custom-nav-bar {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		height: 56px;
+		background-color: #FFFFFF;
+		border-bottom: 1px solid #E5E5E5;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 16px;
+		z-index: 999;
+	}
+
+	.nav-title {
+		font-size: 17px;
+		font-weight: 600;
+		color: #1A1A1A;
+		margin: 0;
+	}
+
+	.menu-button {
+		position: absolute;
+		right: 8px;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 40px;
+		height: 40px;
+		background: transparent;
+		border: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #333333;
+		cursor: pointer;
+		transition: background-color 0.2s ease;
+		border-radius: 50%;
+	}
+
+	.menu-button:active {
+		background-color: #F0F0F0;
+	}
+
+	/* ==================== 底部Tab栏 ==================== */
+	.custom-tab-bar {
+		position: fixed;
+		bottom: 0;
+		left: 0;
+		right: 0;
+		height: 56px;
+		background-color: #FFFFFF;
+		border-top: 1px solid #E5E5E5;
+		display: flex;
+		align-items: center;
+		justify-content: space-around;
+		z-index: 999;
+	}
+
+	.tab-item {
+		flex: 1;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		text-decoration: none;
+		color: #999999;
+		transition: all 0.2s ease;
+		padding: 6px 0;
+		cursor: pointer;
+		position: relative;
+	}
+
+	.tab-item:active {
+		background-color: #F7F7F7;
+	}
+
+	/* 激活状态 */
+	.tab-item.tab-active {
+		color: #07C160;
+	}
+
+	.tab-icon {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		margin-bottom: 4px;
+	}
+
+	.tab-icon svg {
+		stroke: currentColor;
+	}
+
+	.tab-label {
+		font-size: 11px;
+		font-weight: 400;
+		line-height: 1;
+	}
+
+	/* 激活指示器（可选）*/
+	.tab-item.tab-active::after {
+		content: '';
+		position: absolute;
+		top: 0;
+		left: 50%;
+		transform: translateX(-50%);
+		width: 24px;
+		height: 2px;
+		background-color: #07C160;
+		border-radius: 0 0 2px 2px;
+	}
+</style>
+</html>

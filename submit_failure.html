@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en" class="feedback">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<title>提交故障信息</title>
+		<link rel="stylesheet" type="text/css" href="./css/mui.min.css" />
+		<link rel="stylesheet" type="text/css" href="./css/feedback.css" />
+		<script src="./js/mui.min.js"></script>
+	</head>
+
+	<body>
+		<header class="mui-bar mui-bar-nav">
+			<a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
+			<button id="submit" class="mui-btn mui-btn-blue mui-btn-link mui-pull-right">发送</button>
+			<h1 class="mui-title">提交故障信息</h1>
+		</header>
+		<div class="mui-content">
+			
+			<div class="mui-content-padded">
+				<div class="mui-inline">提交故障信息</div>
+				<!--快捷输入具体内容，开发者可自己替换常用语-->
+			</div>
+			<div class="row mui-input-row">
+				<input id="title" type="text" id='question' class="mui-input-clear question" placeholder="故障标题..."></textarea>
+			</div>
+			<hr />
+			<div class="mui-content-padded">
+				<div class="mui-inline">路灯信息</div>
+				<!--快捷输入具体内容，开发者可自己替换常用语-->
+			</div>
+			<form class="mui-input-group">
+				
+			    <div class="mui-input-row">
+			        <label>编号</label>
+			        <input id="id_flag" type = "text" class="mui-input-clear">
+			    </div>
+				<div class="mui-input-row">
+				    <label>区域</label>
+					<input id="area" type="text" class="mui-input-clear">
+				</div>
+			</form>
+			<div class="row mui-input-row">
+				<textarea id='question' class="mui-input-clear question" placeholder="请详细描述故障信息..."></textarea>
+			</div>
+		</div>
+		<script src="../js/mui.min.js"></script>
+		<script src=" ../js/feedback.js" type="text/javascript" charset="utf-8"></script>
+		<script type="text/javascript">
+			var title_dom = document.getElementById("title")
+			var question_dom = document.getElementById("question")
+			var id_flag_dom = document.getElementById("id_flag")
+			var area_dom = document.getElementById("area")
+			var submit_button = document.getElementById("submit")
+			submit_button.addEventListener('tap', function() {
+				console.log(title_dom.value)
+				mui.ajax('http://8.137.33.218:8880/fault/addinfo',{
+					dataType:'json',//服务器返回json格式数据
+					type:'post',//HTTP请求类型
+					data:{
+						  "area": area_dom.value,
+						  "content": question_dom.value,
+						  "lightId": id_flag_dom.value,
+						  "title": title_dom.value
+					},
+					timeout:10000,//超时时间设置为10秒；
+					headers:{'Content-Type':'application/json'},	              
+					success:function(data){
+						if(data != null){
+							mui.toast("提交成功");
+							var lamppage = plus.webview.getWebviewById('management.html')
+							mui.fire(lamppage,'customEvent');
+							mui.back()
+						}
+						if(data == null){
+							mui.toast("操作失败");
+						}
+					},
+					error:function(xhr,type,errorThrown){
+						console.log(errorThrown)
+					}
+				});
+			})
+			mui.init();
+			
+			
+		</script>
+	</body>
+
+</html>

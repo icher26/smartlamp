@@ -1,0 +1,43 @@
+# HBuilder X 项目忽略文件
+
+# 打包输出目录
+unpackage/
+
+# HBuilder X 配置
+.hbuilderx/
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 编辑器配置
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# 日志文件
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# 依赖目录(如果使用npm)
+node_modules/
+
+# 临时文件
+*.tmp
+*.temp
+*.bak
+*.bak2
+*.bak3
+*.bak4
+*.bak5
+*.bak6
+
+# 本地环境配置
+.env.local
+.env.*.local

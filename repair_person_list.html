@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+		<meta charset="utf-8">
+		<title>Hello MUI</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1,maximum-scale=1,user-scalable=no">
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+		<meta name="apple-mobile-web-app-capable" content="yes">
+		<meta name="apple-mobile-web-app-status-bar-style" content="black">
+		<link rel="stylesheet" href="./css/mui.min.css">
+		<script src="./js/mui.min.js"></script>
+	</head>
+
+	<body>
+		<header class="mui-bar mui-bar-nav">
+			<a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
+			<h1 class="mui-title">维修人员</h1>
+		</header>
+		<div id="load_card" class="mui-content">
+		    <ul id="list" class="mui-table-view mui-table-view-striped mui-table-view-condensed">
+		    </ul>
+		</div>
+	</body>
+	<script>
+		window.addEventListener('customEvent',function(event){
+			plus.webview.currentWebview().reload()
+		});
+		var data_arr = [{}]
+		var list = document.getElementById("list");
+		var createFragment = function(count) {
+			var fragment = document.createDocumentFragment();
+			var li;
+			for (var i = 0; i < count; i++) {
+				li = document.createElement('li');
+				li.className = 'mui-table-view-cell';
+				li.id = data_arr[i].id;
+				li.innerHTML = '<div class="mui-table"><div class="mui-table-cell mui-col-xs-10"><h4 class="mui-ellipsis">' + data_arr[i].username + '</h4><p class="mui-h6 mui-ellipsis">' + data_arr[i].phone + '</p></div><div class="mui-table-cell mui-col-xs-2 mui-text-right"><span class="mui-h5">' + data_arr[i].area + '</span></div></div>';
+				fragment.appendChild(li);
+			}
+			return fragment;
+		};
+		var pageNum = 1
+		mui.init({
+		  pullRefresh : {	
+		      container:"#load_card",//下拉刷新容器标识，querySelector能定位的css选择器均可，比如：id、.class等
+		  	up : {
+		  	  height:50,//可选,默认50.触发下拉刷新拖动距离,
+		  	  auto: true,//可选,默认false.首次加载自动下拉刷新一次
+		  	  callback :load_new_data //必选，刷新函数，根据具体业务来编写，比如通过ajax从服务器获取新数据；
+		  	}
+		  	
+		    }
+		});
+		function load_new_data() {
+			mui.ajax('http://8.137.33.218:8880/repair/findAllByPage/' + pageNum,{
+				dataType:'json',//服务器返回json格式数据
+				type:'get',//HTTP请求类型
+				timeout:10000,//超时时间设置为10秒；
+				headers:{'Content-Type':'application/json'},	              
+				success:function(data){
+					if(data != null){
+						data_arr = data
+						list.appendChild(createFragment(data_arr.length));
+						pageNum = pageNum + 1
+						
+					}
+				},
+				error:function(xhr,type,errorThrown){
+					console.log(errorThrown)
+				}
+			});
+			setTimeout(function() {
+				mui('#load_card').pullRefresh().endPullupToRefresh(true); //这行代码会隐藏掉 “正在加载...” 容器
+				mui('#load_card').pullRefresh().refresh(true);
+			}, 1000);
+		}
+		
+		mui(".mui-table-view").on('tap', '.mui-table-view-cell', function (e) {
+			var id = this.getAttribute('id');
+			mui.openWindow({
+				url: 'repair_detail.html', 
+				id:'repair_detail',
+				extras:{
+					detailId:id
+				}
+			});
+		})
+	</script>
+</html>

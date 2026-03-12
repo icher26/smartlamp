@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+	<title>登录</title>
+	<script src="js/config.js"></script>
+	<script src="js/mui.min.js"></script>
+	<script src="js/app.js"></script>
+	<link href="css/mui.min.css" rel="stylesheet"/>
+</head>
+<body>
+	<!-- 导航栏 -->
+	<header class="page-header">
+		<button class="back-button" id="backButton">
+			<!-- 左箭头图标：简单的线性箭头 -->
+			<svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+				<path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+			</svg>
+		</button>
+		<h1 class="page-title">登录</h1>
+	</header>
+
+	<!-- 内容区域 -->
+	<div class="page-content">
+		<!-- 欢迎文字 -->
+		<div class="welcome-section">
+			<h2 class="welcome-title">欢迎回来</h2>
+			<p class="welcome-subtitle">登录以继续使用路灯管理系统</p>
+		</div>
+
+		<!-- 登录表单卡片 -->
+		<div class="form-card">
+			<!-- 账号输入框 -->
+			<div class="input-group">
+				<div class="input-icon">
+					<!-- 用户图标：圆形头部 + 弧形身体 -->
+					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<circle cx="10" cy="7" r="3" stroke="currentColor" stroke-width="1.5"/>
+						<path d="M4 17 C4 13 6 12 10 12 C14 12 16 13 16 17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</div>
+				<input id="account" type="text" class="input-field" placeholder="手机号或用户名"/>
+			</div>
+
+			<!-- 密码输入框 -->
+			<div class="input-group">
+				<div class="input-icon">
+					<!-- 锁图标：矩形锁体 + 圆形锁扣 -->
+					<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<rect x="4" y="9" width="12" height="8" rx="1" stroke="currentColor" stroke-width="1.5"/>
+						<path d="M7 9 V6 C7 4.5 8 3 10 3 C12 3 13 4.5 13 6 V9" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</div>
+				<input id="password" type="password" class="input-field" placeholder="请输入密码"/>
+				<button class="toggle-password" id="togglePassword">
+					<!-- 眼睛图标（显示密码） -->
+					<svg class="eye-open" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M2 10 C2 10 5 4 10 4 C15 4 18 10 18 10 C18 10 15 16 10 16 C5 16 2 10 2 10 Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+						<circle cx="10" cy="10" r="2" stroke="currentColor" stroke-width="1.5"/>
+					</svg>
+					<!-- 眼睛图标（隐藏密码） - 默认隐藏 -->
+					<svg class="eye-closed" style="display:none;" width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+						<path d="M2 10 C2 10 5 4 10 4 C15 4 18 10 18 10 C18 10 15 16 10 16 C5 16 2 10 2 10 Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+						<circle cx="10" cy="10" r="2" stroke="currentColor" stroke-width="1.5"/>
+						<line x1="3" y1="3" x2="17" y2="17" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+					</svg>
+				</button>
+			</div>
+
+			<!-- 忘记密码链接 -->
+			<div class="forgot-password-section">
+				<a href="#" class="forgot-link" id="forgotPassword">忘记密码？</a>
+			</div>
+
+			<!-- 登录按钮 -->
+			<button id="tologin" type="button" class="btn-login">登录</button>
+		</div>
+
+		<!-- 底部提示 -->
+		<div class="footer-tip">
+			<p>还没有账号？<a href="#" class="link-register" id="toRegister">立即注册</a></p>
+		</div>
+	</div>
+</body>
+<script type="text/javascript" charset="utf-8">
+	mui.init({
+		swipeBack: true, // 启用右滑关闭功能
+		beforeback: function() {
+			plus.navigator.setStatusBarBackground("#F7F7F7");
+			return true;
+		}
+	});
+
+	mui.plusReady(function() {
+		plus.navigator.setStatusBarBackground("#FFFFFF");
+
+		var tologinButton = document.getElementById('tologin');
+		var accountBox = document.getElementById('account');
+		var passwordBox = document.getElementById('password');
+		var togglePasswordButton = document.getElementById('togglePassword');
+		var backButton = document.getElementById('backButton');
+		var toRegisterLink = document.getElementById('toRegister');
+
+		// 登录逻辑
+		tologinButton.addEventListener('tap', function(event) {
+			var loginInfo = {
+				account: accountBox.value,
+				password: passwordBox.value
+			};
+			app.login(loginInfo, function(err) {
+				if (err) {
+					plus.nativeUI.toast(err);
+					return;
+				}
+			});
+		});
+
+		// 密码显示/隐藏切换
+		togglePasswordButton.addEventListener('tap', function(event) {
+			var eyeOpen = this.querySelector('.eye-open');
+			var eyeClosed = this.querySelector('.eye-closed');
+
+			if (passwordBox.type === 'password') {
+				passwordBox.type = 'text';
+				eyeOpen.style.display = 'none';
+				eyeClosed.style.display = 'block';
+			} else {
+				passwordBox.type = 'password';
+				eyeOpen.style.display = 'block';
+				eyeClosed.style.display = 'none';
+			}
+		});
+
+		// 返回按钮
+		backButton.addEventListener('tap', function(event) {
+			mui.back();
+		});
+
+		// 注册链接
+		toRegisterLink.addEventListener('tap', function(event) {
+			event.preventDefault();
+			mui.openWindow({
+				url: 'login_register.html',
+				id: 'register'
+			});
+		});
+	});
+</script>
+<style>
+	/* ==================== 全局重置 ==================== */
+	* {
+		margin: 0;
+		padding: 0;
+		box-sizing: border-box;
+	}
+
+	body {
+		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+		background-color: #F7F7F7;
+		color: #333333;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+		min-height: 100vh;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* ==================== 导航栏 ==================== */
+	.page-header {
+		position: relative;
+		height: 56px;
+		background-color: #FFFFFF;
+		border-bottom: 1px solid #E5E5E5;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 16px;
+	}
+
+	.back-button {
+		position: absolute;
+		left: 8px;
+		top: 50%;
+		transform: translateY(-50%);
+		width: 40px;
+		height: 40px;
+		background: transparent;
+		border: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #333333;
+		cursor: pointer;
+		transition: background-color 0.2s ease;
+		border-radius: 50%;
+	}
+
+	.back-button:active {
+		background-color: #F0F0F0;
+	}
+
+	.page-title {
+		font-size: 17px;
+		font-weight: 600;
+		color: #1A1A1A;
+	}
+
+	/* ==================== 内容区域 ==================== */
+	.page-content {
+		flex: 1;
+		padding: 24px;
+		display: flex;
+		flex-direction: column;
+	}
+
+	/* ==================== 欢迎区域 ==================== */
+	.welcome-section {
+		margin-bottom: 32px;
+		animation: fadeInDown 0.5s ease-out;
+	}
+
+	.welcome-title {
+		font-size: 26px;
+		font-weight: 600;
+		color: #1A1A1A;
+		margin-bottom: 8px;
+	}
+
+	.welcome-subtitle {
+		font-size: 14px;
+		color: #999999;
+	}
+
+	/* ==================== 表单卡片 ==================== */
+	.form-card {
+		background: #FFFFFF;
+		border-radius: 12px;
+		padding: 24px;
+		box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+		animation: fadeInUp 0.5s ease-out 0.1s both;
+	}
+
+	/* ==================== 输入框组 ==================== */
+	.input-group {
+		position: relative;
+		margin-bottom: 16px;
+		display: flex;
+		align-items: center;
+		background-color: #F7F7F7;
+		border-radius: 8px;
+		border: 1px solid #E5E5E5;
+		transition: all 0.2s ease;
+	}
+
+	.input-group:focus-within {
+		border-color: #07C160;
+		background-color: #FFFFFF;
+	}
+
+	.input-icon {
+		flex: 0 0 auto;
+		width: 48px;
+		height: 48px;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #999999;
+	}
+
+	.input-field {
+		flex: 1;
+		height: 48px;
+		border: none;
+		background: transparent;
+		font-size: 15px;
+		color: #333333;
+		outline: none;
+		padding-right: 12px;
+	}
+
+	.input-field::placeholder {
+		color: #CCCCCC;
+	}
+
+	.toggle-password {
+		flex: 0 0 auto;
+		width: 48px;
+		height: 48px;
+		background: transparent;
+		border: none;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		color: #999999;
+		cursor: pointer;
+		transition: color 0.2s ease;
+	}
+
+	.toggle-password:active {
+		color: #07C160;
+	}
+
+	/* ==================== 忘记密码 ==================== */
+	.forgot-password-section {
+		text-align: right;
+		margin-bottom: 24px;
+	}
+
+	.forgot-link {
+		font-size: 13px;
+		color: #07C160;
+		text-decoration: none;
+		transition: opacity 0.2s ease;
+	}
+
+	.forgot-link:active {
+		opacity: 0.7;
+	}
+
+	/* ==================== 登录按钮 ==================== */
+	.btn-login {
+		width: 100%;
+		height: 48px;
+		background-color: #07C160;
+		border: none;
+		border-radius: 8px;
+		color: #FFFFFF;
+		font-size: 16px;
+		font-weight: 500;
+		cursor: pointer;
+		transition: all 0.2s ease;
+	}
+
+	.btn-login:active {
+		background-color: #06AD56;
+		transform: scale(0.98);
+	}
+
+	/* ==================== 底部提示 ==================== */
+	.footer-tip {
+		margin-top: auto;
+		padding-top: 24px;
+		text-align: center;
+		animation: fadeInUp 0.5s ease-out 0.2s both;
+	}
+
+	.footer-tip p {
+		font-size: 14px;
+		color: #999999;
+	}
+
+	.link-register {
+		color: #07C160;
+		text-decoration: none;
+		font-weight: 500;
+		transition: opacity 0.2s ease;
+	}
+
+	.link-register:active {
+		opacity: 0.7;
+	}
+
+	/* ==================== 动画 ==================== */
+	@keyframes fadeInDown {
+		from {
+			opacity: 0;
+			transform: translateY(-20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	@keyframes fadeInUp {
+		from {
+			opacity: 0;
+			transform: translateY(20px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	/* ==================== 响应式优化 ==================== */
+	@media (max-width: 375px) {
+		.welcome-title {
+			font-size: 24px;
+		}
+
+		.form-card {
+			padding: 20px;
+		}
+	}
+</style>
+</html>

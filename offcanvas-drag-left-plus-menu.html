@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>菜单</title>
+	<meta name="viewport" content="initial-scale=1,maximum-scale=1,user-scalable=no">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<script src="./js/mui.min.js"></script>
+	<script src="./js/app.js"></script>
+	<link rel="stylesheet" href="../css/mui.min.css">
+	<style>
+		/* ==================== 全局样式 ==================== */
+		body, .mui-content {
+			background-color: #F7F7F7;
+			color: #333333;
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
+			-webkit-font-smoothing: antialiased;
+			-moz-osx-font-smoothing: grayscale;
+		}
+
+		header.mui-bar {
+			display: none;
+		}
+
+		.mui-bar-nav~.mui-content {
+			padding: 0;
+		}
+
+		/* ==================== 菜单标题 ==================== */
+		.menu-header {
+			padding: 32px 16px 16px;
+			background: #FFFFFF;
+			border-bottom: 1px solid #E5E5E5;
+		}
+
+		.menu-title {
+			font-size: 20px;
+			font-weight: 600;
+			color: #1A1A1A;
+			margin: 0 0 4px 0;
+		}
+
+		.menu-subtitle {
+			font-size: 13px;
+			color: #999999;
+		}
+
+		/* ==================== 菜单列表 ==================== */
+		.mui-table-view {
+			margin: 0;
+			background-color: transparent;
+		}
+
+		.mui-table-view-cell {
+			background-color: #FFFFFF;
+			border-bottom: 1px solid #F0F0F0;
+			padding: 16px;
+			transition: background-color 0.2s ease;
+		}
+
+		.mui-table-view-cell:active {
+			background-color: #F7F7F7;
+		}
+
+		.mui-table-view-cell a {
+			color: #333333;
+			font-size: 15px;
+			text-decoration: none;
+			display: flex;
+			align-items: center;
+			gap: 12px;
+		}
+
+		/* 注销按钮特殊样式 */
+		.logout-cell {
+			margin-top: 16px;
+		}
+
+		.logout-cell a {
+			color: #FA5151;
+			font-weight: 500;
+		}
+
+		/* 菜单图标 */
+		.menu-icon {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			width: 24px;
+			height: 24px;
+			color: inherit;
+		}
+	</style>
+</head>
+<body>
+	<div class="mui-content">
+		<!-- 菜单头部 -->
+		<div class="menu-header">
+			<h3 class="menu-title">菜单</h3>
+			<p class="menu-subtitle">路灯管理系统</p>
+		</div>
+
+		<!-- 菜单列表 -->
+		<ul class="mui-table-view">
+			<li class="mui-table-view-cell logout-cell">
+				<a id="logout">
+					<span class="menu-icon">
+						<!-- 退出图标：箭头指向门框 -->
+						<svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+							<path d="M13 14 L17 10 L13 6 M17 10 L7 10" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+							<path d="M7 3 L4 3 C3.5 3 3 3.5 3 4 L3 16 C3 16.5 3.5 17 4 17 L7 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+						</svg>
+					</span>
+					<span>用户注销</span>
+				</a>
+			</li>
+		</ul>
+	</div>
+<script type="text/javascript" charset="utf-8">
+	// 关闭back、menu按键监听，这样侧滑主界面会自动获得back和memu的按键事件，仅在主界面处理按键逻辑即可
+	mui.init({
+		keyEventBind: {
+			backbutton: false,
+			menubutton: false
+		}
+	});
+
+	var main = null;
+	mui.plusReady(function () {
+		main = plus.webview.currentWebview().opener();
+	})
+
+	// 使用MUI的事件委托绑定退出登录（本小姐优化的注销逻辑！(￣▽￣)ノ）
+	mui('.mui-table-view').on('tap', '#logout', function(event) {
+		var btnArray = ['取消', '确定'];
+		mui.confirm('确认退出登录？', '用户注销', btnArray, function(e) {
+			if(e.index == 1){
+				// 点击确定
+				// 调用logout逻辑清除本地存储
+				if(typeof app !== 'undefined' && app.logout) {
+					app.logout();
+				} else {
+					plus.storage.clear();
+				}
+
+				// 直接打开登录页（本小姐简化的逻辑！）
+				mui.openWindow({
+					url: 'login_main.html',
+					id: 'login_main',
+					show: {
+						autoShow: true,
+						aniShow: 'pop-in'
+					},
+					waiting: {
+						autoShow: false
+					}
+				});
+
+				// 延迟关闭当前主页面，避免卡顿
+				setTimeout(function(){
+					var currentPage = plus.webview.currentWebview();
+					var mainPage = currentPage.opener();
+					if(mainPage) {
+						mainPage.close('none');
+					}
+					currentPage.close('none');
+				}, 300);
+			}
+		});
+	});
+</script>
+</body>
+</html>

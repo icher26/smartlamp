@@ -1,0 +1,563 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>路灯设备管理</title>
+	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
+	<!-- 本小姐添加的配置文件引用！(￣▽￣)／ -->
+	<script src="./js/config.js"></script>
+	<style>
+		* {
+			margin: 0;
+			padding: 0;
+			box-sizing: border-box;
+		}
+
+		body {
+			font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+			background-color: #F5F5F5;
+			color: #000000;
+			font-size: 14px;
+		}
+
+		.nav-bar {
+			background-color: #FFFFFF;
+			height: 44px;
+			display: flex;
+			align-items: center;
+			border-bottom: 1px solid #E5E5E5;
+			position: sticky;
+			top: 0;
+			z-index: 100;
+		}
+
+		.nav-back {
+			width: 44px;
+			height: 44px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			cursor: pointer;
+		}
+
+		.nav-back svg {
+			width: 20px;
+			height: 20px;
+			fill: #000000;
+		}
+
+		.nav-title {
+			flex: 1;
+			text-align: center;
+			font-size: 17px;
+			font-weight: 600;
+			color: #000000;
+			margin-right: 44px;
+		}
+
+		.list-section {
+			background-color: #FFFFFF;
+			margin: 10px 0;
+		}
+
+		.list-item {
+			display: flex;
+			align-items: center;
+			padding: 16px;
+			border-bottom: 1px solid #E5E5E5;
+		}
+
+		.list-item:last-child {
+			border-bottom: none;
+		}
+
+		.status-icon {
+			width: 40px;
+			height: 40px;
+			border-radius: 50%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			margin-right: 12px;
+			flex-shrink: 0;
+		}
+
+		.status-icon svg {
+			width: 20px;
+			height: 20px;
+		}
+
+		.status-icon.status-normal { background-color: #F0FFF4; }
+		.status-icon.status-stop { background-color: #FFF7E6; }
+		.status-icon.status-fault { background-color: #FFF1F0; }
+
+		.item-content {
+			flex: 1;
+			min-width: 0;
+		}
+
+		.item-title {
+			font-size: 16px;
+			font-weight: 600;
+			color: #000000;
+			margin-bottom: 4px;
+		}
+
+		.item-meta {
+			display: flex;
+			align-items: center;
+			font-size: 13px;
+			color: #888888;
+			margin-top: 4px;
+		}
+
+		.item-meta-item {
+			margin-right: 12px;
+		}
+
+		.status-badge {
+			display: inline-block;
+			padding: 2px 8px;
+			border-radius: 2px;
+			font-size: 12px;
+			font-weight: 500;
+		}
+
+		.status-badge.normal {
+			background-color: #F0FFF4;
+			color: #07C160;
+		}
+
+		.status-badge.stop {
+			background-color: #FFF7E6;
+			color: #FA8C16;
+		}
+
+		.status-badge.fault {
+			background-color: #FFF1F0;
+			color: #F5222D;
+		}
+
+		.item-actions {
+			display: flex;
+			gap: 8px;
+		}
+
+		.btn {
+			padding: 6px 12px;
+			border-radius: 4px;
+			font-size: 14px;
+			border: none;
+			cursor: pointer;
+			transition: opacity 0.2s;
+		}
+
+		.btn:active {
+			opacity: 0.7;
+		}
+
+		.btn-danger {
+			background-color: #FFF1F0;
+			color: #F5222D;
+		}
+
+		.empty-state {
+			text-align: center;
+			padding: 60px 20px;
+			color: #888888;
+		}
+
+		/* ==================== 自定义确认对话框 ==================== */
+		.custom-dialog-mask {
+			position: fixed;
+			top: 0;
+			left: 0;
+			right: 0;
+			bottom: 0;
+			background-color: rgba(0, 0, 0, 0.6);
+			z-index: 1000;
+			display: none;
+		}
+
+		.custom-dialog-mask.show {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.custom-dialog {
+			width: 270px;
+			background-color: #FFFFFF;
+			border-radius: 12px;
+			overflow: hidden;
+			animation: dialogScale 0.2s ease-out;
+		}
+
+		@keyframes dialogScale {
+			0% {
+				transform: scale(0.9);
+				opacity: 0;
+			}
+			100% {
+				transform: scale(1);
+				opacity: 1;
+			}
+		}
+
+		.custom-dialog-header {
+			padding: 20px 20px 10px;
+			text-align: center;
+		}
+
+		.custom-dialog-title {
+			font-size: 17px;
+			font-weight: 600;
+			color: #000000;
+			margin-bottom: 8px;
+		}
+
+		.custom-dialog-content {
+			padding: 0 20px 20px;
+			text-align: center;
+			font-size: 14px;
+			color: #888888;
+			line-height: 1.6;
+		}
+
+		.custom-dialog-footer {
+			display: flex;
+			border-top: 1px solid #E5E5E5;
+		}
+
+		.custom-dialog-btn {
+			flex: 1;
+			height: 50px;
+			background: none;
+			border: none;
+			font-size: 17px;
+			cursor: pointer;
+			transition: background-color 0.2s;
+		}
+
+		.custom-dialog-btn:active {
+			background-color: #F5F5F5;
+		}
+
+		.custom-dialog-btn.cancel {
+			color: #888888;
+			border-right: 1px solid #E5E5E5;
+		}
+
+		.custom-dialog-btn.confirm {
+			color: #F5222D;
+			font-weight: 500;
+		}
+	</style>
+</head>
+
+<body>
+	<!-- 导航栏 -->
+	<div class="nav-bar">
+		<div class="nav-back" id="backBtn">
+			<svg viewBox="0 0 24 24">
+				<path d="M15 18l-6-6 6-6" fill="none" stroke="currentColor" stroke-width="2"/>
+			</svg>
+		</div>
+		<div class="nav-title">路灯设备管理</div>
+	</div>
+
+	<!-- 路灯列表 -->
+	<div class="list-section" id="lampList"></div>
+
+	<!-- 自定义确认对话框 -->
+	<div class="custom-dialog-mask" id="deleteDialog">
+		<div class="custom-dialog">
+			<div class="custom-dialog-header">
+				<div class="custom-dialog-title">确认删除</div>
+			</div>
+			<div class="custom-dialog-content">
+				确定要删除这个路灯设备吗？
+			</div>
+			<div class="custom-dialog-footer">
+				<button class="custom-dialog-btn cancel" id="cancelDeleteBtn">取消</button>
+				<button class="custom-dialog-btn confirm" id="confirmDeleteBtn">删除</button>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// 本小姐完全重写的代码！确保所有函数都正确定义！(￣▽￣)／
+
+		// SVG图标
+		const icons = {
+			normal: '<svg viewBox="0 0 24 24" fill="none" stroke="#07C160" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>',
+			stop: '<svg viewBox="0 0 24 24" fill="none" stroke="#FA8C16" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>',
+			fault: '<svg viewBox="0 0 24 24" fill="none" stroke="#F5222D" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M15 9l-6 6M9 9l6 6"/></svg>'
+		};
+
+		var deletedIds = [];
+		var pendingDeleteId = null;
+
+		// 从localStorage读取已删除的ID列表
+		function loadDeletedIds() {
+			try {
+				var stored = localStorage.getItem('deletedLampIds');
+				if (stored) {
+					deletedIds = JSON.parse(stored);
+					console.log('📥 从localStorage加载已删除ID:', deletedIds);
+					return deletedIds;
+				}
+			} catch(e) {
+				console.error('❌ 读取localStorage失败:', e);
+			}
+			return [];
+		}
+
+		// 保存已删除的ID列表到localStorage
+		function saveDeletedIds() {
+			try {
+				localStorage.setItem('deletedLampIds', JSON.stringify(deletedIds));
+				console.log('💾 保存已删除ID到localStorage:', deletedIds);
+			} catch(e) {
+				console.error('❌ 保存到localStorage失败:', e);
+			}
+		}
+
+		// 渲染列表项
+		function renderLampItem(lamp) {
+			var lampStatus = String(lamp.status);
+			var statusClass, statusText, statusIcon;
+
+			if (lampStatus === "0") {
+				statusClass = "stop";
+				statusText = "已停止";
+				statusIcon = icons.stop;
+			} else if (lampStatus === "1") {
+				statusClass = "normal";
+				statusText = "正常";
+				statusIcon = icons.normal;
+			} else if (lampStatus === "2") {
+				statusClass = "fault";
+				statusText = "故障";
+				statusIcon = icons.fault;
+			} else {
+				console.warn('⚠️ 未知的路灯状态:', lamp.status);
+				statusClass = "fault";
+				statusText = "未知";
+				statusIcon = icons.fault;
+			}
+
+			return `
+				<div class="list-item" data-id="${lamp.id}">
+					<div class="status-icon status-${statusClass}">
+						${statusIcon}
+					</div>
+					<div class="item-content">
+						<div class="item-title">${lamp.area || '未知区域'}</div>
+						<div class="item-meta">
+							<span class="item-meta-item">
+								<span class="status-badge ${statusClass}">${statusText}</span>
+							</span>
+							<span class="item-meta-item">${lamp.lightId || '-'}</span>
+						</div>
+					</div>
+					<div class="item-actions">
+						<button class="btn btn-danger" onclick="showDeleteDialog(${lamp.id})">删除</button>
+					</div>
+				</div>
+			`;
+		}
+
+		// 加载列表
+		function loadList() {
+			console.log('🔄 开始加载路灯列表...');
+
+			// 加载已删除的ID
+			deletedIds = loadDeletedIds();
+
+			var list = document.getElementById('lampList');
+			if (!list) {
+				console.error('❌ 找不到lampList元素！');
+				return;
+			}
+
+			list.innerHTML = '<div class="empty-state">正在加载数据...</div>';
+
+			// 从服务器加载数据
+			var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsFindAll) + '/1';
+			console.log('📡 API URL:', apiUrl);
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('GET', apiUrl, true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.timeout = appConfig.api.timeout;
+
+			xhr.onload = function() {
+				console.log('📡 服务器响应状态:', xhr.status);
+				if (xhr.status === 200) {
+					try {
+						var data = JSON.parse(xhr.responseText);
+						console.log('✅ 获取到原始数据:', data);
+
+						if(data && data.length > 0){
+							console.log('✅ 共有', data.length, '条路灯数据');
+
+							// 本小姐按照笨蛋的要求：不过滤数据，直接显示所有路灯！(￣▽￣)ノ
+							var html = '';
+							for (var i = 0; i < data.length; i++) {
+								html += renderLampItem(data[i]);
+							}
+							list.innerHTML = html;
+							console.log('✅ 列表渲染完成！共显示', data.length, '条路灯');
+						} else {
+							console.log('⚠️ 数据为空');
+							list.innerHTML = '<div class="empty-state">暂无路灯设备</div>';
+						}
+					} catch(e) {
+						console.error('❌ 数据解析错误:', e);
+						list.innerHTML = '<div class="empty-state">数据加载失败：' + e.message + '</div>';
+					}
+				} else {
+					console.error('❌ API返回状态码:', xhr.status);
+					list.innerHTML = '<div class="empty-state">数据加载失败：HTTP ' + xhr.status + '</div>';
+				}
+			};
+
+			xhr.onerror = function() {
+				console.error('❌ 网络错误');
+				list.innerHTML = '<div class="empty-state">网络错误，请检查连接</div>';
+			};
+
+			xhr.ontimeout = function() {
+				console.error('❌ 请求超时');
+				list.innerHTML = '<div class="empty-state">请求超时，请重试</div>';
+			};
+
+			xhr.send();
+			console.log('📤 已发送API请求');
+		}
+
+		// 显示删除确认对话框
+		function showDeleteDialog(id) {
+			console.log('🗑️ 显示删除对话框，ID:', id);
+			pendingDeleteId = id;
+			document.getElementById('deleteDialog').classList.add('show');
+		}
+
+		// 隐藏删除确认对话框
+		function hideDeleteDialog() {
+			console.log('❌ 取消删除');
+			document.getElementById('deleteDialog').classList.remove('show');
+			pendingDeleteId = null;
+		}
+
+		// 确认删除
+		function confirmDelete() {
+			if (pendingDeleteId === null) {
+				console.warn('⚠️ 没有待删除的路灯ID');
+				return;
+			}
+
+			var id = pendingDeleteId;
+			console.log('✅ 确认删除路灯，ID:', id);
+			hideDeleteDialog();
+
+			// 调用API删除
+			var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsDelete) + '/' + id;
+			console.log('📡 删除API URL:', apiUrl);
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('DELETE', apiUrl, true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.timeout = appConfig.api.timeout;
+
+			xhr.onload = function() {
+				if (xhr.status === 200) {
+					console.log('✅ 删除成功');
+
+					// 保存到localStorage
+					if (deletedIds.indexOf(id) === -1) {
+						deletedIds.push(id);
+						saveDeletedIds();
+					}
+
+					// 通知lamp.html页面刷新
+					if(typeof plus !== 'undefined') {
+						var lamppage = plus.webview.getWebviewById('lamp.html');
+						if(lamppage) {
+							lamppage.evalJS("window.dispatchEvent(new CustomEvent('lampDeleted', {detail: {id: " + id + "}}));");
+						}
+					}
+
+					// 重新加载列表
+					loadList();
+					alert('删除成功');
+				} else {
+					console.error('❌ 删除失败，状态码:', xhr.status);
+					alert('删除失败：HTTP ' + xhr.status);
+				}
+			};
+
+			xhr.onerror = function() {
+				console.error('❌ 删除网络错误');
+				alert('删除失败，请检查网络连接');
+			};
+
+			xhr.send();
+		}
+
+		// 返回功能
+		function handleBack() {
+			console.log('🔙 执行返回操作');
+			if(typeof plus !== 'undefined') {
+				console.log('📱 APP环境：关闭webview');
+				plus.webview.currentWebview().close();
+			} else {
+				console.log('🌐 浏览器环境：history.back');
+				window.history.back();
+			}
+		}
+
+		// 初始化
+		function init() {
+			console.log('🚀 ========== 路灯管理页面初始化开始 ==========');
+
+			// 绑定返回按钮事件
+			var backBtn = document.getElementById('backBtn');
+			if (backBtn) {
+				backBtn.addEventListener('click', handleBack);
+				console.log('✅ 返回按钮事件已绑定');
+			} else {
+				console.error('❌ 找不到返回按钮元素');
+			}
+
+			// 绑定对话框按钮事件
+			var cancelBtn = document.getElementById('cancelDeleteBtn');
+			var confirmBtn = document.getElementById('confirmDeleteBtn');
+
+			if (cancelBtn) {
+				cancelBtn.addEventListener('click', hideDeleteDialog);
+				console.log('✅ 取消按钮事件已绑定');
+			}
+
+			if (confirmBtn) {
+				confirmBtn.addEventListener('click', confirmDelete);
+				console.log('✅ 确认按钮事件已绑定');
+			}
+
+			// 加载数据
+			loadList();
+
+			console.log('✅ ========== 路灯管理页面初始化完成 ==========');
+		}
+
+		// 页面加载完成后初始化
+		if (document.readyState === 'loading') {
+			document.addEventListener('DOMContentLoaded', init);
+			console.log('⏳ 等待DOM加载完成...');
+		} else {
+			init();
+		}
+	</script>
+</body>
+</html>
