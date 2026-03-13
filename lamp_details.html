@@ -471,7 +471,7 @@
 		var batteryBChart = echarts.init(document.getElementById('batteryBChart'));
 		var lightTimeChart = echarts.init(document.getElementById('lightTimeChart'));
 
-		// 获取URL参数或plus传递的参数（本小姐改进的逻辑！(￣▽￣)ノ）
+		// 获取URL参数或plus传递的参数
 		function getDetailId() {
 			console.log('开始获取路灯ID...');
 
@@ -731,7 +731,7 @@
 				}]
 			});
 
-			// 点亮时间 - 本小姐修复的完整24小时数据显示！(￣▽￣)／
+			// 点亮时间 - 完整24小时数据
 			var yAllData = [
 				data.count1 || 0, data.count2 || 0, data.count3 || 0, data.count4 || 0,
 				data.count5 || 0, data.count6 || 0, data.count7 || 0, data.count8 || 0,
@@ -741,7 +741,7 @@
 				data.count21 || 0, data.count22 || 0, data.count23 || 0, data.count24 || 0
 			];
 
-			// 本小姐的改进：显示完整的24小时数据，不再根据lightTime过滤！
+			// 显示完整的24小时数据，不根据lightTime过滤
 			// 这样即使没有lightTime数据，图表也能正常显示完整的24小时统计
 			var xTimeData = timeData; // 使用完整的24小时时间段
 			var yData = yAllData; // 使用完整的24小时点亮次数数据
@@ -1103,7 +1103,7 @@
 		}
 
 		// ============ 实时控制功能 ============
-		// 本小姐添加的实时控制代码！(￣▽￣)／
+		// 实时控制功能
 
 		/**
 		function updateLampRealtime(updateData, successMsg) {
@@ -1258,7 +1258,7 @@
 			addLightSwitchRealtimeControl();
 			addModeSwitchRealtimeControl();
 			addAngleRealtimeControl();
-			console.log('实时控制功能已加载！本小姐的代码最完美！(￣▽￣)／');
+			console.log('实时控制功能已加载');
 		}, 500);
 
 	</script>

@@ -55,7 +55,6 @@
 			// 初始化MUI
 			mui.init();
 
-			// 本小姐修复的代码！使用mui.ready确保DOM加载完成 (￣▽￣)／
 			mui.ready(function() {
 				/**
 				 * 安全地添加事件监听器
@@ -94,7 +93,7 @@
 				addSafeEventListener('repair_person', 'repair_person_list.html', 'repair_person_list');
 				addSafeEventListener('add_person', 'add_person.html', 'add_person');
 
-				console.log('管理页面初始化完成！本小姐的代码最安全！(￣▽￣)ノ');
+				console.log('管理页面初始化完成');
 			});
 		</script>
 	</body>

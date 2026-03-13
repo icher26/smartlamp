@@ -4,7 +4,6 @@
 	<meta charset="utf-8">
 	<title>路灯设备管理</title>
 	<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
-	<!-- 本小姐添加的配置文件引用！(￣▽￣)／ -->
 	<script src="./js/config.js"></script>
 	<style>
 		* {
@@ -286,8 +285,6 @@
 	</div>
 
 	<script>
-		// 本小姐完全重写的代码！确保所有函数都正确定义！(￣▽￣)／
-
 		// SVG图标
 		const icons = {
 			normal: '<svg viewBox="0 0 24 24" fill="none" stroke="#07C160" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9 12l2 2 4-4"/></svg>',
@@ -402,7 +399,7 @@
 						if(data && data.length > 0){
 							console.log('✅ 共有', data.length, '条路灯数据');
 
-							// 本小姐按照笨蛋的要求：不过滤数据，直接显示所有路灯！(￣▽￣)ノ
+							// 不过滤数据，直接显示所有路灯
 							var html = '';
 							for (var i = 0; i < data.length; i++) {
 								html += renderLampItem(data[i]);

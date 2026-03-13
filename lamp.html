@@ -309,11 +309,11 @@
 			}
 		}
 
-		// 渲染列表项（本小姐添加了类型转换和调试！(￣▽￣)ノ）
+		// 渲染单条路灯列表项
 		function renderLampItem(lamp) {
 			let statusClass, statusText, statusIcon;
 
-			// 统一转换为字符串类型进行比较（本小姐的改进！）
+			// 统一转换为字符串类型进行比较
 			var lampStatus = String(lamp.status);
 
 			if (lampStatus === "0") {
@@ -329,7 +329,7 @@
 				statusText = "故障";
 				statusIcon = icons.fault;
 			} else {
-				// 未知状态，默认显示故障（本小姐添加的容错！）
+				// 未知状态，默认显示故障
 				console.warn('未知的路灯状态:', lamp.status, '类型:', typeof lamp.status);
 				statusClass = "fault";
 				statusText = "未知(" + lamp.status + ")";
@@ -427,10 +427,10 @@
 			xhr.send();
 		}
 
-		// 更新统计（本小姐优化的统计逻辑！(￣▽￣)ノ）
+		// 更新路灯状态统计数量
 		function updateStats() {
 
-			// 本小姐改进的逻辑：从已加载的路灯数据中实时计算统计！
+			// 从已加载数据中实时计算各状态数量
 			if (allLampsForStats && allLampsForStats.length > 0) {
 				var totalCount = allLampsForStats.length;
 				var normalCount = 0;
@@ -439,7 +439,7 @@
 
 				for (var i = 0; i < allLampsForStats.length; i++) {
 					var lamp = allLampsForStats[i];
-					// 统一转换为字符串类型（本小姐的改进！）
+					// 统一转换为字符串类型
 					var lampStatus = String(lamp.status);
 					if (lampStatus === "1") {
 						normalCount++;
@@ -532,7 +532,7 @@
 					list.innerHTML = '';
 					pageNum = 1;
 					allLoadedData = []; // 清空已加载数据
-					allLampsForStats = []; // 清空统计数据（本小姐新增！）
+					allLampsForStats = []; // 清空统计数据
 					load_new_data();
 				}
 			});
@@ -551,7 +551,7 @@
 					list.innerHTML = '';
 					pageNum = 1;
 					allLoadedData = [];
-					allLampsForStats = []; // 清空统计数据（本小姐新增！）
+					allLampsForStats = []; // 清空统计数据
 					load_new_data();
 				});
 				console.log('已添加删除通知监听');

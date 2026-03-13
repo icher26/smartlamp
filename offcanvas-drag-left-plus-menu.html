@@ -131,7 +131,7 @@
 		main = plus.webview.currentWebview().opener();
 	})
 
-	// 使用MUI的事件委托绑定退出登录（本小姐优化的注销逻辑！(￣▽￣)ノ）
+	// 使用MUI事件委托绑定退出登录
 	mui('.mui-table-view').on('tap', '#logout', function(event) {
 		var btnArray = ['取消', '确定'];
 		mui.confirm('确认退出登录？', '用户注销', btnArray, function(e) {
@@ -144,7 +144,7 @@
 					plus.storage.clear();
 				}
 
-				// 直接打开登录页（本小姐简化的逻辑！）
+				// 打开登录页
 				mui.openWindow({
 					url: 'login_main.html',
 					id: 'login_main',
