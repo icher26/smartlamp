@@ -37,7 +37,6 @@
 	</div>
 </body>
 <style>
-	/* ==================== 全局样式 ==================== */
 	body {
 		font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Helvetica Neue", Arial, sans-serif;
 		background-color: #F7F7F7;
@@ -45,13 +44,11 @@
 		-moz-osx-font-smoothing: grayscale;
 	}
 
-	/* ==================== 页面容器 ==================== */
 	.page-container {
 		padding: 16px;
 		padding-bottom: 80px;
 	}
 
-	/* ==================== 统计卡片区域 ==================== */
 	.stats-section {
 		margin-bottom: 16px;
 	}
@@ -94,7 +91,6 @@
 		color: #1A1A1A;
 	}
 
-	/* ==================== 图表卡片 ==================== */
 	.chart-card {
 		background: #FFFFFF;
 		border-radius: 12px;
@@ -108,20 +104,10 @@
 		height: 450px;
 	}
 
-	/* ==================== 响应式优化 ==================== */
 	@media (max-width: 375px) {
-		.stats-icon {
-			width: 48px;
-			height: 48px;
-		}
-
-		.stats-value {
-			font-size: 22px;
-		}
-
-		.chart-container {
-			height: 400px;
-		}
+		.stats-icon { width: 48px; height: 48px; }
+		.stats-value { font-size: 22px; }
+		.chart-container { height: 400px; }
 	}
 </style>
 <script type="text/javascript">
@@ -163,26 +149,18 @@
 					areaData = data.data;
 					var length = data.data.length;
 					var totalCount = 0;
-
 					area = [];
 					areaLampNum = [];
-
 					for(var i = 0; i < length; i++){
 						area.push(areaData[i].area);
 						areaLampNum.push(areaData[i].counts);
 						totalCount += areaData[i].counts;
 					}
-
 					document.getElementById('totalLamps').innerHTML = totalCount + ' 盏';
-
 					if(mapLampEchart) {
 						mapLampEchart.setOption({
-							xAxis: {
-								data: area
-							},
-							series: [{
-								data: areaLampNum
-							}]
+							xAxis: { data: area },
+							series: [{ data: areaLampNum }]
 						});
 					}
 				}
@@ -192,7 +170,6 @@
 				mui.toast('数据加载失败');
 			}
 		});
-
 		setTimeout(function() {
 			mui('#load_card').pullRefresh().endPulldownToRefresh();
 		}, 1000);
@@ -200,14 +177,10 @@
 
 	mui.plusReady(function () {
 		mapLampDom = document.getElementById('mapLamp');
-
 		if (!mapLampEchart && mapLampDom) {
 			mapLampEchart = echarts.init(mapLampDom);
 		}
-
-		if (chartInitialized) {
-			return;
-		}
+		if (chartInitialized) { return; }
 		chartInitialized = true;
 
 		var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsTotal);
@@ -217,30 +190,21 @@
 			timeout:appConfig.api.timeout,
 			headers:{'Content-Type':'application/json'},
 			success:function(data){
-				console.log('===== 数据返回 =====');
-				console.log(data);
-
 				if(data && data.data && data.data.length > 0) {
 					areaData = data.data;
 					var length = data.data.length;
 					var totalCount = 0;
-
 					area = [];
 					areaLampNum = [];
-
 					for(var i = 0; i < length; i++){
 						area.push(areaData[i].area);
 						areaLampNum.push(areaData[i].counts);
 						totalCount += areaData[i].counts;
 					}
-
-					console.log('===== 处理后的数据 =====');
-					console.log('X轴区域:', area);
-					console.log('Y轴数量:', areaLampNum);
-
 					document.getElementById('totalLamps').innerHTML = totalCount + ' 盏';
 
 					var option = {
+						color: ['#FF9800'],
 						title: {
 							text: '区域路灯数量分布',
 							x: 'center',
@@ -253,8 +217,9 @@
 						},
 						legend: {
 							data: ['路灯数量'],
-							x: 'left',
-							y: 'bottom',
+							x: 'center',
+							y: 30,
+							selectedMode: false,
 							textStyle: {
 								fontSize: 12,
 								color: '#666666'
@@ -266,9 +231,9 @@
 						},
 						grid: {
 							x: 50,
-							y: 50,
+							y: 65,
 							x2: 30,
-							y2: 80
+							y2: 100
 						},
 						xAxis: [
 							{
@@ -303,19 +268,12 @@
 						]
 					};
 
-					console.log('===== 图表配置 =====');
-					console.log(option);
-
 					mapLampEchart.setOption(option, true);
-					console.log('===== 图表已设置完成 =====');
 
 					window.addEventListener('resize', function() {
-						if (mapLampEchart) {
-							mapLampEchart.resize();
-						}
+						if (mapLampEchart) { mapLampEchart.resize(); }
 					});
 				} else {
-					console.error('数据为空或格式错误');
 					mui.toast('数据为空');
 				}
 			},
@@ -324,7 +282,6 @@
 				mui.toast('数据加载失败，请稍后重试');
 			}
 		});
-
 	});
 </script>
 </body>

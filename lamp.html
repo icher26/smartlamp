@@ -390,8 +390,12 @@
 			xhr.onload = function() {
 				if (xhr.status === 200) {
 					try {
-						var data = JSON.parse(xhr.responseText);
-						console.log('📊 加载第', pageNum, '页数据:', data);
+						var response = JSON.parse(xhr.responseText);
+						console.log('📊 加载第', pageNum, '页数据:', response);
+
+						// 处理分页响应格式（服务器返回 {total, current, pages, records}）
+						var data = response.records || response;
+
 						if(data != null && data.length > 0){
 							data_arr = data;
 							// 打印第一条数据用于调试
