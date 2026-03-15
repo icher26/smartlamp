@@ -144,7 +144,16 @@
 					plus.storage.clear();
 				}
 
-				// 打开登录页
+				// 先关闭主页面和菜单页面，避免界面重叠
+				var currentPage = plus.webview.currentWebview();
+				var mainPage = currentPage.opener();
+
+				if(mainPage) {
+					mainPage.close('none');
+				}
+				currentPage.close('none');
+
+				// 再打开登录页
 				mui.openWindow({
 					url: 'login_main.html',
 					id: 'login_main',
@@ -156,16 +165,6 @@
 						autoShow: false
 					}
 				});
-
-				// 延迟关闭当前主页面，避免卡顿
-				setTimeout(function(){
-					var currentPage = plus.webview.currentWebview();
-					var mainPage = currentPage.opener();
-					if(mainPage) {
-						mainPage.close('none');
-					}
-					currentPage.close('none');
-				}, 300);
 			}
 		});
 	});
