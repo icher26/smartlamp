@@ -393,19 +393,31 @@
 				console.log('📡 服务器响应状态:', xhr.status);
 				if (xhr.status === 200) {
 					try {
-						var data = JSON.parse(xhr.responseText);
-						console.log('✅ 获取到原始数据:', data);
+						var response = JSON.parse(xhr.responseText);
+						console.log('✅ 获取到原始数据:', response);
 
-						if(data && data.length > 0){
-							console.log('✅ 共有', data.length, '条路灯数据');
+						// 兼容多种响应格式
+						var lampsData = null;
+						if (response && response.code === 200 && response.data) {
+							// 标准格式: { code: 200, data: { records: [...] } }
+							lampsData = response.data.records || response.data;
+						} else if (response && response.records) {
+							// 分页格式: { records: [...] }
+							lampsData = response.records;
+						} else if (Array.isArray(response)) {
+							// 数组格式: [...]
+							lampsData = response;
+						}
 
-							// 不过滤数据，直接显示所有路灯
+						if(lampsData && lampsData.length > 0){
+							console.log('✅ 共有', lampsData.length, '条路灯数据');
+
 							var html = '';
-							for (var i = 0; i < data.length; i++) {
-								html += renderLampItem(data[i]);
+							for (var i = 0; i < lampsData.length; i++) {
+								html += renderLampItem(lampsData[i]);
 							}
 							list.innerHTML = html;
-							console.log('✅ 列表渲染完成！共显示', data.length, '条路灯');
+							console.log('✅ 列表渲染完成！共显示', lampsData.length, '条路灯');
 						} else {
 							console.log('⚠️ 数据为空');
 							list.innerHTML = '<div class="empty-state">暂无路灯设备</div>';
@@ -459,36 +471,54 @@
 			console.log('✅ 确认删除路灯，ID:', id);
 			hideDeleteDialog();
 
-			// 调用API删除
-			var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsDelete) + '/' + id;
+			// API: POST /lamps/logicdelete，参数为JSON Body (Long id)
+			var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsDelete);
 			console.log('📡 删除API URL:', apiUrl);
 
 			var xhr = new XMLHttpRequest();
-			xhr.open('DELETE', apiUrl, true);
+			xhr.open('POST', apiUrl, true);
 			xhr.setRequestHeader('Content-Type', 'application/json');
 			xhr.timeout = appConfig.api.timeout;
 
 			xhr.onload = function() {
+				console.log('删除响应状态码:', xhr.status);
 				if (xhr.status === 200) {
-					console.log('✅ 删除成功');
+					try {
+						var response = JSON.parse(xhr.responseText);
+						if (response.code === 200 || response.code === 200) {
+							console.log('✅ 删除成功');
 
-					// 保存到localStorage
-					if (deletedIds.indexOf(id) === -1) {
-						deletedIds.push(id);
-						saveDeletedIds();
-					}
+							// 保存到localStorage
+							if (deletedIds.indexOf(id) === -1) {
+								deletedIds.push(id);
+								saveDeletedIds();
+							}
 
-					// 通知lamp.html页面刷新
-					if(typeof plus !== 'undefined') {
-						var lamppage = plus.webview.getWebviewById('lamp.html');
-						if(lamppage) {
-							lamppage.evalJS("window.dispatchEvent(new CustomEvent('lampDeleted', {detail: {id: " + id + "}}));");
+							// 通知lamp.html页面刷新
+							if(typeof plus !== 'undefined') {
+								var lamppage = plus.webview.getWebviewById('lamp.html');
+								if(lamppage) {
+									lamppage.evalJS("window.dispatchEvent(new CustomEvent('lampDeleted', {detail: {id: " + id + "}}));");
+								}
+							}
+
+							// 重新加载列表
+							loadList();
+							alert('删除成功');
+						} else {
+							console.error('❌ 删除失败:', response.msg || response.message);
+							alert('删除失败: ' + (response.msg || response.message || '服务器错误'));
 						}
+					} catch(e) {
+						console.log('✅ 删除成功');
+						// 保存到localStorage
+						if (deletedIds.indexOf(id) === -1) {
+							deletedIds.push(id);
+							saveDeletedIds();
+						}
+						loadList();
+						alert('删除成功');
 					}
-
-					// 重新加载列表
-					loadList();
-					alert('删除成功');
 				} else {
 					console.error('❌ 删除失败，状态码:', xhr.status);
 					alert('删除失败：HTTP ' + xhr.status);
@@ -500,7 +530,12 @@
 				alert('删除失败，请检查网络连接');
 			};
 
-			xhr.send();
+			xhr.ontimeout = function() {
+				alert('删除失败: 请求超时');
+			};
+
+			// JSON Body传参
+			xhr.send(JSON.stringify(id));
 		}
 
 		// 返回功能

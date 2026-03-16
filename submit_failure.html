@@ -7,6 +7,16 @@
 		<link rel="stylesheet" type="text/css" href="./css/mui.min.css" />
 		<link rel="stylesheet" type="text/css" href="./css/feedback.css" />
 		<script src="./js/mui.min.js"></script>
+		<script src="./js/config.js"></script>
+		<style>
+			/* 修复 passive event listener 警告 */
+			* {
+				touch-action: manipulation;
+			}
+			body {
+				touch-action: pan-y;
+			}
+		</style>
 	</head>
 
 	<body>
@@ -16,24 +26,22 @@
 			<h1 class="mui-title">提交故障信息</h1>
 		</header>
 		<div class="mui-content">
-			
+
 			<div class="mui-content-padded">
 				<div class="mui-inline">提交故障信息</div>
-				<!--快捷输入具体内容，开发者可自己替换常用语-->
 			</div>
 			<div class="row mui-input-row">
-				<input id="title" type="text" id='question' class="mui-input-clear question" placeholder="故障标题..."></textarea>
+				<input id="title" type="text" class="mui-input-clear question" placeholder="故障标题...">
 			</div>
 			<hr />
 			<div class="mui-content-padded">
 				<div class="mui-inline">路灯信息</div>
-				<!--快捷输入具体内容，开发者可自己替换常用语-->
 			</div>
 			<form class="mui-input-group">
-				
+
 			    <div class="mui-input-row">
 			        <label>编号</label>
-			        <input id="id_flag" type = "text" class="mui-input-clear">
+			        <input id="id_flag" type="text" class="mui-input-clear">
 			    </div>
 				<div class="mui-input-row">
 				    <label>区域</label>
@@ -44,46 +52,48 @@
 				<textarea id='question' class="mui-input-clear question" placeholder="请详细描述故障信息..."></textarea>
 			</div>
 		</div>
-		<script src="../js/mui.min.js"></script>
-		<script src=" ../js/feedback.js" type="text/javascript" charset="utf-8"></script>
 		<script type="text/javascript">
+			mui.init();
+
 			var title_dom = document.getElementById("title")
 			var question_dom = document.getElementById("question")
 			var id_flag_dom = document.getElementById("id_flag")
 			var area_dom = document.getElementById("area")
 			var submit_button = document.getElementById("submit")
+
 			submit_button.addEventListener('tap', function() {
 				console.log(title_dom.value)
-				mui.ajax('http://8.137.33.218:8880/fault/addinfo',{
-					dataType:'json',//服务器返回json格式数据
-					type:'post',//HTTP请求类型
-					data:{
-						  "area": area_dom.value,
-						  "content": question_dom.value,
-						  "lightId": id_flag_dom.value,
-						  "title": title_dom.value
-					},
-					timeout:10000,//超时时间设置为10秒；
-					headers:{'Content-Type':'application/json'},	              
+				var requestData = {
+					"area": area_dom.value,
+					"content": question_dom.value,
+					"lightId": id_flag_dom.value,
+					"title": title_dom.value
+				};
+				console.log('发送数据:', JSON.stringify(requestData));
+
+				mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.faultAdd),{
+					dataType:'json',
+					type:'post',
+					data: JSON.stringify(requestData),  // 手动序列化为JSON字符串
+					timeout:10000,
+					headers:{'Content-Type':'application/json'},
 					success:function(data){
-						if(data != null){
+						console.log('响应数据:', data);
+						if(data != null && data.code === 200){
 							mui.toast("提交成功");
 							var lamppage = plus.webview.getWebviewById('management.html')
 							mui.fire(lamppage,'customEvent');
 							mui.back()
-						}
-						if(data == null){
-							mui.toast("操作失败");
+						} else {
+							mui.toast("操作失败: " + (data.msg || data.message || '未知错误'));
 						}
 					},
 					error:function(xhr,type,errorThrown){
-						console.log(errorThrown)
+						console.log('请求失败:', xhr.status, xhr.responseText, errorThrown)
+						mui.toast("网络错误，请重试");
 					}
 				});
 			})
-			mui.init();
-			
-			
 		</script>
 	</body>
 

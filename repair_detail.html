@@ -7,7 +7,7 @@
 		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
 		<link href="css/mui.css" rel="stylesheet" />
 		<script src="js/mui.js"></script>
-		
+		<script src="js/config.js"></script>
 	</head>
 
 	<body>
@@ -54,11 +54,11 @@
 			var change_status_dom = document.getElementById("change_status")
 			detailId = self.detailId
 			console.log(detailId)
-			mui.ajax('http://8.137.33.218:8880/repair/selectone/' + detailId,{
-				dataType:'json',//服务器返回json格式数据
-				type:'get',//HTTP请求类型
-				timeout:10000,//超时时间设置为10秒；
-				headers:{'Content-Type':'application/json'},	              
+			mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.repairSelectOne) + '/' + detailId,{
+				dataType:'json',
+				type:'get',
+				timeout:10000,
+				headers:{'Content-Type':'application/json'},
 				success:function(data){
 					if(data.code == 200){
 						username_dom.value = data.data.username
@@ -70,51 +70,64 @@
 				},
 				error:function(xhr,type,errorThrown){
 					console.log(errorThrown)
+					mui.toast("加载失败，请重试");
 				}
 			});
 			delate_dom.addEventListener('tap', function(){
-				mui.ajax('http://8.137.33.218:8880/repair/delete/' + user_id,{
-					dataType:'json',//服务器返回json格式数据
-					type:'post',//HTTP请求类型
-					timeout:10000,//超时时间设置为10秒；
-					headers:{'Content-Type':'application/json'},	              
+				// 使用 repairDelete 端点逻辑删除
+				console.log('删除用户ID:', user_id);
+				mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.repairDelete),{
+					dataType:'json',
+					type:'post',
+					data: JSON.stringify(user_id),  // 手动序列化
+					timeout:10000,
+					headers:{'Content-Type':'application/json'},
 					success:function(data){
-						if(data.code == 200){
+						console.log('删除响应:', data);
+						if(data && data.code == 200){
 							var lamppage = plus.webview.getWebviewById('repair_person_list')
 							mui.fire(lamppage,'customEvent');
 							mui.back()
+						} else {
+							mui.toast("删除失败: " + (data.msg || data.message || '未知错误'));
 						}
 					},
 					error:function(xhr,type,errorThrown){
-						console.log(errorThrown)
+						console.log('删除失败:', xhr.status, xhr.responseText, errorThrown)
+						mui.toast("删除失败，请重试");
 					}
 				});
 			})
 			submit_dom.addEventListener('tap', function() {
-				mui.ajax('http://8.137.33.218:8880/repair/editor',{
-					dataType:'json',//服务器返回json格式数据
-					type:'post',//HTTP请求类型
-					data:{
-						  "id":user_id,
-						  "area": area_dom.value,
-						  "number": id_flag_dom.value,
-						  "phone": phone_dom.value,
-						  "username": username_dom.value
-					},
-					timeout:10000,//超时时间设置为10秒；
-					headers:{'Content-Type':'application/json'},	              
+				// 使用 repairUpdate 端点更新维修人员信息
+				var requestData = {
+					"id": user_id,
+					"area": area_dom.value,
+					"number": id_flag_dom.value,
+					"phone": phone_dom.value,
+					"username": username_dom.value
+				};
+				console.log('更新数据:', JSON.stringify(requestData));
+
+				mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.repairUpdate),{
+					dataType:'json',
+					type:'post',
+					data: JSON.stringify(requestData),  // 手动序列化为JSON字符串
+					timeout:10000,
+					headers:{'Content-Type':'application/json'},
 					success:function(data){
-						if(data.code == 200){
+						console.log('更新响应:', data);
+						if(data && data.code == 200){
 							var lamppage = plus.webview.getWebviewById('repair_person_list')
 							mui.fire(lamppage,'customEvent');
 							mui.back()
-						}
-						if(data.code != 200){
-							mui.toast("操作失败")
+						} else {
+							mui.toast("操作失败: " + (data.msg || data.message || '未知错误'));
 						}
 					},
 					error:function(xhr,type,errorThrown){
-						console.log(errorThrown)
+						console.log('更新失败:', xhr.status, xhr.responseText, errorThrown)
+						mui.toast("更新失败，请重试");
 					}
 				});
 			})

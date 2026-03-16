@@ -7,7 +7,7 @@
 		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />
 		<link href="css/mui.css" rel="stylesheet" />
 		<script src="js/mui.js"></script>
-		
+		<script src="js/config.js"></script>
 	</head>
 
 	<body>
@@ -35,11 +35,11 @@
 			var change_status_dom = document.getElementById("change_status")
 			detailId = self.detailId
 			console.log(detailId)
-			mui.ajax('http://8.137.33.218:8880/advice/selectone/' + detailId,{
+			mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.adviceSelectOne) + '/' + detailId,{
 				dataType:'json',//服务器返回json格式数据
 				type:'get',//HTTP请求类型
 				timeout:10000,//超时时间设置为10秒；
-				headers:{'Content-Type':'application/json'},	              
+				headers:{'Content-Type':'application/json'},
 				success:function(data){
 					if(data.code == 200){
 						head_line_dom.innerText = data.data.title
@@ -51,14 +51,16 @@
 				},
 				error:function(xhr,type,errorThrown){
 					console.log(errorThrown)
+					mui.toast("加载失败，请重试");
 				}
 			});
 			change_status_dom.addEventListener('tap', function(){
-				mui.ajax('http://8.137.33.218:8880/advice/check?id=' + detailId,{
-					dataType:'json',//服务器返回json格式数据
-					type:'post',//HTTP请求类型
-					timeout:10000,//超时时间设置为10秒；
-					headers:{'Content-Type':'application/json'},	              
+				// 使用 adviceUpdate 端点更新建议状态为已处理
+				mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.adviceUpdate) + '?id=' + detailId + '&status=0',{
+					dataType:'json',
+					type:'post',
+					timeout:10000,
+					headers:{'Content-Type':'application/json'},
 					success:function(data){
 						if(data.code == 200){
 							var lamppage = plus.webview.getWebviewById('pending_advice')
@@ -68,6 +70,7 @@
 					},
 					error:function(xhr,type,errorThrown){
 						console.log(errorThrown)
+						mui.toast("操作失败，请重试");
 					}
 				});
 			})

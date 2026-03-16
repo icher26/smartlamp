@@ -10,6 +10,7 @@
 		<meta name="apple-mobile-web-app-status-bar-style" content="black">
 		<link rel="stylesheet" href="./css/mui.min.css">
 		<script src="./js/mui.min.js"></script>
+		<script src="./js/config.js"></script>
 	</head>
 
 	<body>
@@ -35,7 +36,10 @@
 				li = document.createElement('li');
 				li.className = 'mui-table-view-cell';
 				li.id = data_arr[i].id;
-				li.innerHTML = '<div class="mui-table"><div class="mui-table-cell mui-col-xs-10"><h4 class="mui-ellipsis">' + data_arr[i].title + '</h4><p class="mui-h6 mui-ellipsis">' + data_arr[i].content + '</p></div><div class="mui-table-cell mui-col-xs-2 mui-text-right"><span>' + data_arr[i].creatTime.substr(5,5) + '</span></div></div>';
+				// 兼容 creatTime/createTime，添加空值判断
+				var timeStr = data_arr[i].creatTime || data_arr[i].createTime || '';
+				var displayTime = timeStr ? timeStr.substr(0, 10) : '-';
+				li.innerHTML = '<div class="mui-table"><div class="mui-table-cell mui-col-xs-10"><h4 class="mui-ellipsis">' + (data_arr[i].title || '无标题') + '</h4><p class="mui-h6 mui-ellipsis">' + (data_arr[i].content || '无内容') + '</p></div><div class="mui-table-cell mui-col-xs-2 mui-text-right"><span>' + displayTime + '</span></div></div>';
 				fragment.appendChild(li);
 			}
 			return fragment;
@@ -53,21 +57,37 @@
 		    }
 		});
 		function load_new_data() {
-			mui.ajax('http://8.137.33.218:8880/fault/select/0/' + pageNum,{
+			mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.faultFindAll) + '/' + pageNum,{
 				dataType:'json',//服务器返回json格式数据
 				type:'get',//HTTP请求类型
 				timeout:10000,//超时时间设置为10秒；
-				headers:{'Content-Type':'application/json'},	              
+				headers:{'Content-Type':'application/json'},
 				success:function(data){
-					if(data != null){
-						data_arr = data
-						list.appendChild(createFragment(data_arr.length));
-						pageNum = pageNum + 1
-						
+					// 兼容多种响应格式
+					var records = null;
+					if (data && data.code === 200 && data.data) {
+						records = data.data.records || (Array.isArray(data.data) ? data.data : null);
+					} else if (data && data.records) {
+						records = data.records;
+					} else if (Array.isArray(data)) {
+						records = data;
+					}
+
+					if(records && records.length > 0){
+						// 根据status过滤已处理(0)的故障
+						var filteredData = records.filter(function(item) {
+							return item.status === 0 || item.status === "0" || item.handled === 0 || item.handled === "0";
+						});
+						if(filteredData.length > 0) {
+							data_arr = filteredData;
+							list.appendChild(createFragment(data_arr.length));
+							pageNum = pageNum + 1;
+						}
 					}
 				},
 				error:function(xhr,type,errorThrown){
 					console.log(errorThrown)
+					mui.toast("加载失败，请重试");
 				}
 			});
 			setTimeout(function() {

@@ -36,8 +36,8 @@
 			<button id="submit" type="button" class="mui-btn mui-btn-green mui-btn-block">添加</button>
 		</div>
 		
-		<script src="js/mui.js">
-		</script>
+		<script src="js/mui.js"></script>
+		<script src="js/config.js"></script>
 		<script type="text/javascript">
 			mui.init()
 			
@@ -48,27 +48,35 @@
 			var area_dom = document.getElementById("area")
 			var submit_button = document.getElementById("submit")
 			submit_button.addEventListener('tap', function(){
-				mui.ajax('http://8.137.33.218:8880/repair/addperson',{
-					dataType:'json',//服务器返回json格式数据
-					type:'post',//HTTP请求类型
-					data:{
-						"area": area_dom.value,
-						"number": id_flag_dom.value,
-						"phone": phone_dom.value,
-						"username": username_dom.value
-					},
-					timeout:10000,//超时时间设置为10秒；
-					headers:{'Content-Type':'application/json'},	              
+				// 构建请求数据
+				var requestData = {
+					"area": area_dom.value,
+					"number": id_flag_dom.value,
+					"phone": phone_dom.value,
+					"username": username_dom.value
+				};
+				console.log('发送数据:', JSON.stringify(requestData));
+
+				mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.repairAdd),{
+					dataType:'json',
+					type:'post',
+					data: JSON.stringify(requestData),  // 手动序列化为JSON字符串
+					timeout:10000,
+					headers:{'Content-Type':'application/json'},
 					success:function(data){
-						if(data.code == 200){
+						console.log('响应数据:', data);
+						if(data && data.code == 200){
 							plus.nativeUI.toast("添加成功");
 							var lamppage = plus.webview.getWebviewById('repair_person_list')
 							mui.fire(lamppage,'customEvent');
 							mui.back()
+						} else {
+							plus.nativeUI.toast("添加失败: " + (data.msg || data.message || '未知错误'));
 						}
 					},
 					error:function(xhr,type,errorThrown){
-						console.log(errorThrown)
+						console.log('请求失败:', xhr.status, xhr.responseText, errorThrown)
+						plus.nativeUI.toast("网络错误，请重试");
 					}
 				});
 			})

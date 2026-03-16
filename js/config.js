@@ -33,29 +33,48 @@
 			// API超时时间（毫秒）
 			timeout: 10000,
 
-			// API端点
+			// API端点 - 根据 APP端联调交接文档v1.0 配置
 			endpoints: {
+				// 用户认证
 				login: '/login',
 				register: '/register',
+
+				// 路灯管理
 				lampsTotal: '/lamps/lampstotal',
 				lampsFindAll: '/lamps/findAllByPage',
 				lampsSelectOne: '/lamps/selectone',
-				lampsUpdate: '/lamps/updateall',
-				lampsDelete: '/lamps/delete',
-				lampsAdd: '/lamps/add',
+				lampsUpdate: '/lamps/updateall/',      // 注意尾部斜杠
+				lampsDelete: '/lamps/logicdelete',     // 逻辑删除
+				lampsAdd: '/lamps/addinfo',            // 新增路灯
 				lampsFindRecent: '/lamps/findRecent',
-				faultSelect: '/fault/select',
-				faultSelectOne: '/fault/selectone',
-				faultCheck: '/fault/check',
-				faultAdd: '/fault/addinfo',
-				adviceSelect: '/advice/select',
+				lampsAuto: '/lamps/auto',              // 自动模式
+				lampsByHand: '/lamps/byhand',          // 手动模式
+				lampsSetManual: '/lamps/setmanual',    // 手动模式+目标角度
+				lampsUpdateAngle: '/lamps/updateangle',// 硬件角度上报
+				lampsStop: '/lamps/stop',              // 停止
+				lampsNormal: '/lamps/normal',          // 正常
+				lampsBreaks: '/lamps/breaks',          // 故障
+
+				// 故障管理 (注意是faults复数)
+				faultFindAll: '/faults/findAllByPage',
+				faultSelectOne: '/faults/selectone',
+				faultAdd: '/faults/addinfo',
+				faultDelete: '/faults/logicdelete',
+				faultUpdate: '/faults/updateall/',
+
+				// 建议管理
+				adviceFindAll: '/advice/findAllByPage',
 				adviceSelectOne: '/advice/selectone',
-				adviceCheck: '/advice/check',
+				adviceAdd: '/advice/addinfo',
+				adviceDelete: '/advice/logicdelete',
+				adviceUpdate: '/advice/updateall/',
+
+				// 维修管理
 				repairFindAll: '/repair/findAllByPage',
 				repairSelectOne: '/repair/selectone',
-				repairAddPerson: '/repair/addperson',
-				repairDelete: '/repair/delete',
-				repairEditor: '/repair/editor'
+				repairAdd: '/repair/addperson',      // 新增维修人员（实际后端端点）
+				repairDelete: '/repair/logicdelete',
+				repairUpdate: '/repair/updateall/'
 			}
 		},
 

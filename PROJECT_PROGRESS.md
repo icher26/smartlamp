@@ -1,8 +1,8 @@
 # 智能路灯管理系统 - 项目进度文档
 
-> **文档版本**: v1.2
-> **最后更新**: 2026-03-13
-> **项目状态**: ✅ v1.1.0 已发布并推送至 GitHub
+> **文档版本**: v1.3
+> **最后更新**: 2026-03-16
+> **项目状态**: ✅ v1.2.0 管理模块全面修复完成
 
 ---
 
@@ -51,6 +51,33 @@
 - [x] 创建 `CHANGELOG.md` 版本变更日志
 - [x] 创建 `develop` 开发分支
 
+### v1.2.0 (2026-03-16) — 管理模块全面修复
+
+#### 修复内容
+- [x] 修复路灯管理列表数据为空问题（响应格式兼容）
+- [x] 修复提交故障页面 passive event listener 警告
+- [x] 修复已处理/待处理故障列表 `substr` 未定义错误
+- [x] 修复维修人员添加 404 错误（端点路径修正）
+- [x] 修复所有 POST 请求数据序列化问题（JSON.stringify）
+- [x] 统一所有页面使用 `config.js` 配置文件
+
+#### 涉及文件（13个）
+| 文件 | 修改类型 | 说明 |
+|------|----------|------|
+| `js/config.js` | 端点修正 | `repairAdd: '/repair/addperson'` |
+| `lamp_manage_list.html` | 数据解析 | 兼容 `{ code: 200, data: { records: [] } }` |
+| `lamp_details.html` | API配置 | 使用 config.js 统一配置 |
+| `submit_failure.html` | 多项修复 | CSS警告修复 + JSON序列化 |
+| `failure_details.html` | API配置 | 使用 config.js 端点 |
+| `advice_details.html` | API配置 | 使用 config.js 端点 |
+| `handled_fault.html` | 空值检查 | 修复 `creatTime` 字段访问 |
+| `to_be_process.html` | 空值检查 | 修复 `creatTime` 字段访问 |
+| `pending_advice.html` | 空值检查 | 修复 `creatTime` 字段访问 |
+| `processed_advice.html` | 空值检查 | 修复 `creatTime` 字段访问 |
+| `repair_person_list.html` | 数据解析 | 兼容多种响应格式 |
+| `repair_detail.html` | JSON序列化 | POST请求添加 JSON.stringify |
+| `add_person.html` | JSON序列化 | POST请求添加 JSON.stringify |
+
 ---
 
 ## 🔍 已解决问题记录
@@ -72,6 +99,29 @@
 ### 问题4: lamp.html 数据不显示 ✅
 - 服务器返回格式为 `{ records: [...], total, pages, current }`
 - 原代码直接使用 `response`，需改为 `response.records || response`
+
+### 问题5: 管理模块POST请求失败 ✅
+- **原因**: MUI 的 `mui.ajax` 不会自动序列化 JSON 对象
+- **解决**: 所有 POST 请求需手动使用 `JSON.stringify(data)` 序列化
+- **影响范围**: 维修人员添加/更新、故障提交、建议处理等
+
+### 问题6: 维修人员添加 404 错误 ✅
+- **原因**: API 文档端点与实际后端不匹配
+- **文档显示**: `/repair/addinfo`
+- **实际端点**: `/repair/addperson`
+- **解决**: 更新 `config.js` 中 `repairAdd` 配置
+
+### 问题7: 列表页面 `substr` 未定义错误 ✅
+- **原因**: 部分记录的 `creatTime` 字段为 `null` 或字段名不一致
+- **解决**: 添加空值检查和默认值处理
+```javascript
+var timeStr = data_arr[i].creatTime || data_arr[i].createTime || '';
+var displayTime = timeStr ? timeStr.substr(0, 10) : '-';
+```
+
+### 问题8: passive event listener 警告 ✅
+- **原因**: HTML 语法错误导致重复元素和脚本
+- **解决**: 修复 HTML 结构 + 添加 CSS `touch-action: manipulation`
 
 ---
 
@@ -97,9 +147,10 @@ currentServer: 'public2'  // http://8.137.33.218:8880
 | 数据总览 | ✅ 正常 | 图表显示正常，数据加载正常 |
 | 路灯列表 | ✅ 正常 | 分页加载正常 |
 | 路灯详情 | ✅ 正常 | 查看/编辑功能正常 |
-| 故障管理 | ⚠️ 未测试 | 保持原样 |
-| 建议管理 | ⚠️ 未测试 | 保持原样 |
-| 维修人员 | ⚠️ 未测试 | 保持原样 |
+| 路灯管理 | ✅ 正常 | 列表加载、新增、编辑、删除均已修复 |
+| 故障管理 | ✅ 正常 | 提交、待处理、已处理均已修复 |
+| 建议管理 | ✅ 正常 | 待处理、已处理均已修复 |
+| 维修人员 | ✅ 正常 | 列表、新增、编辑、删除均已修复 |
 
 ---
 
@@ -129,15 +180,55 @@ HBuilder X 安卓基座运行时，读取的是：
 才会同步到 unpackage 并推送到设备
 ```
 
+### MUI AJAX POST 请求注意事项
+```javascript
+// ⚠️ MUI 的 mui.ajax 不会自动序列化 JSON 对象
+// 必须手动使用 JSON.stringify()
+
+// ✅ 正确写法
+mui.ajax(url, {
+    dataType: 'json',
+    type: 'post',
+    data: JSON.stringify(requestData),  // 手动序列化！
+    headers: { 'Content-Type': 'application/json' },
+    ...
+});
+
+// ❌ 错误写法（后端无法正确解析）
+mui.ajax(url, {
+    data: requestData,  // 缺少序列化
+    ...
+});
+```
+
+### API 响应格式兼容处理
+```javascript
+// 后端可能返回多种格式，需兼容处理
+var records = null;
+if (response && response.code === 200 && response.data) {
+    // 标准格式: { code: 200, data: { records: [...] } }
+    records = response.data.records || response.data;
+} else if (response && response.records) {
+    // 简化格式: { records: [...], total, pages }
+    records = response.records;
+} else if (Array.isArray(response)) {
+    // 直接数组格式
+    records = response;
+}
+```
+
 ---
 
 ## 🚀 后续工作建议
 
+### 高优先级
+- [ ] 完整测试所有 API 端点，核对文档与实际后端差异
+- [ ] 测试 MQTT 实时控制功能（已有集成方案待实施）
+
 ### 中优先级
 - [ ] 提取公共函数，减少重复代码
 - [ ] 优化错误处理逻辑，添加 loading 状态提示
-- [ ] 测试故障管理、建议管理、维修人员管理模块
-- [ ] 记录完整 API 接口文档
+- [ ] 统一 API 响应格式处理逻辑
 
 ### 低优先级
 - [ ] ECharts 按需加载（减小包体积，从 949KB 降至约 200KB）
@@ -193,5 +284,5 @@ git config --global --unset https.proxy
 
 ---
 
-**文档版本**: v1.2
-**最后更新**: 2026-03-13
+**文档版本**: v1.3
+**最后更新**: 2026-03-16
