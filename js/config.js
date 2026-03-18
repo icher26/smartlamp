@@ -72,8 +72,8 @@
 				// 维修管理
 				repairFindAll: '/repair/findAllByPage',
 				repairSelectOne: '/repair/selectone',
-				repairAdd: '/repair/addperson',      // 新增维修人员（实际后端端点）
-				repairDelete: '/repair/logicdelete',
+				repairAdd: '/repair/addperson',      // 新增维修人员
+				repairDelete: '/repair/delete',       // 删除维修人员（路径参数：/repair/delete/{id}）
 				repairUpdate: '/repair/updateall/'
 			}
 		},

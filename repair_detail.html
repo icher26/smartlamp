@@ -74,17 +74,19 @@
 				}
 			});
 			delate_dom.addEventListener('tap', function(){
-				// 使用 repairDelete 端点逻辑删除
+				// 使用 repairDelete 端点删除，ID作为路径参数
 				console.log('删除用户ID:', user_id);
-				mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.repairDelete),{
+				var deleteUrl = appConfig.getApiUrl(appConfig.api.endpoints.repairDelete) + '/' + user_id;
+				console.log('删除URL:', deleteUrl);
+				mui.ajax(deleteUrl, {
 					dataType:'json',
 					type:'post',
-					data: JSON.stringify(user_id),  // 手动序列化
 					timeout:10000,
 					headers:{'Content-Type':'application/json'},
 					success:function(data){
 						console.log('删除响应:', data);
 						if(data && data.code == 200){
+							mui.toast("删除成功");
 							var lamppage = plus.webview.getWebviewById('repair_person_list')
 							mui.fire(lamppage,'customEvent');
 							mui.back()

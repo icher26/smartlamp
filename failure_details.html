@@ -17,19 +17,24 @@
 			<a id="change_status" class="mui-icon mui-icon-loop mui-pull-right"></a>
 		</header>
 		<div class="mui-content">
-			<form class="mui-input-group">
-			    <div class="mui-input-row">
-			        <label>编号</label>
-			        <label id="id_flag" text = "20"></label>
-			    </div>
+			<div class="mui-input-group">
 				<div class="mui-input-row">
-				    <label>区域</label>
-					<label id="area" type="text" class="mui-input-clear"><label>
+					<label>编号</label>
+					<span id="id_flag" class="detail-value">-</span>
 				</div>
 				<div class="mui-input-row">
-				    <label>故障描述:</label>
+					<label>区域</label>
+					<span id="area" class="detail-value">-</span>
 				</div>
-			</form></lebel><p id="content"></p>
+			</div>
+			<div class="mui-input-group" style="margin-top: 10px;">
+				<div class="mui-input-row" style="height: auto; min-height: 40px;">
+					<label>故障描述</label>
+				</div>
+				<div class="detail-content">
+					<p id="content">-</p>
+				</div>
+			</div>
 		</div>
 	</body>
 	<script type="text/javascript">
@@ -38,34 +43,66 @@
 		})
 		var head_line_dom = document.getElementById("head_line")
 		var content_dom = document.getElementById("content")
-		var id_flag_label = document.getElementById("id_flag")
-		var area_label = document.getElementById("area")
+		var id_flag_span = document.getElementById("id_flag")
+		var area_span = document.getElementById("area")
+		var detailData = null  // 存储故障详情数据
+
 		mui.plusReady(function(){
 			var self = plus.webview.currentWebview();
 			var change_status_dom = document.getElementById("change_status")
 			detailId = self.detailId
-			console.log(detailId)
-			mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.faultSelectOne) + '/' + detailId,{
-				dataType:'json',//服务器返回json格式数据
-				type:'get',//HTTP请求类型
-				timeout:10000,//超时时间设置为10秒；
-				headers:{'Content-Type':'application/json'},
-				success:function(data){
-					if(data.code == 200){
-						head_line_dom.innerText = data.data.title
-						content_dom.innerText = data.data.content
-						id_flag_label.innerHTML = data.data.lightId
-						area_label.innerHTML = data.data.area
-						if(data.data.status == 0){
-							change_status_dom.classList.add('mui-hidden');
+			detailData = self.detailData  // 接收传递过来的完整数据
+			console.log('detailId:', detailId)
+			console.log('detailData:', detailData)
+
+			// 如果有传递过来的数据，直接使用；否则从服务器获取
+			if (detailData) {
+				displayData(detailData);
+			} else {
+				// 使用 queryAll 获取所有数据，然后根据ID过滤
+				mui.ajax(appConfig.getApiUrl('/faults/queryAll'),{
+					dataType:'json',
+					type:'post',
+					timeout:10000,
+					headers:{'Content-Type':'application/json'},
+					success:function(data){
+						console.log('queryAll响应:', data);
+						var records = null;
+						if (data && data.code === 200 && data.data) {
+							records = data.data.records || data.data;
+						} else if (Array.isArray(data)) {
+							records = data;
 						}
+						if (records) {
+							var item = records.find(function(r) {
+								return r.id == detailId || r.id === parseInt(detailId);
+							});
+							if (item) {
+								displayData(item);
+							} else {
+								mui.toast("未找到故障数据");
+							}
+						}
+					},
+					error:function(xhr,type,errorThrown){
+						console.log('加载失败:', errorThrown)
+						mui.toast("加载失败，请重试");
 					}
-				},
-				error:function(xhr,type,errorThrown){
-					console.log(errorThrown)
-					mui.toast("加载失败，请重试");
+				});
+			}
+
+			// 显示数据的函数
+			function displayData(data) {
+				detailData = data;
+				head_line_dom.innerText = data.title || '无标题'
+				content_dom.innerText = data.content || '无内容'
+				id_flag_span.innerText = data.lightId || data.id || '-'
+				area_span.innerText = data.area || '-'
+				if(data.status == 0 || data.status == "0"){
+					change_status_dom.classList.add('mui-hidden');
 				}
-			});
+			}
+
 			change_status_dom.addEventListener('tap', function(){
 				// 使用 faultUpdate 端点更新故障状态为已处理
 				mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.faultUpdate) + '?id=' + detailId + '&status=0',{
@@ -89,15 +126,29 @@
 		})
 	</script>
 	<style type="text/css">
-		p{
-		  padding-left: 5%;
-		  padding-right: 5%;
-		  word-wrap: break-word;
-		  word-break: break-all;
-		  overflow: hidden;
-		  background-color: #FFFFFF;
-		  font-size: 20px;
-		  line-height: 35px;
+		/* 右侧内容样式 */
+		.detail-value {
+			float: right;
+			padding: 11px 15px;
+			color: #333;
+			font-size: 14px;
+			max-width: 65%;
+			text-align: right;
+			word-break: break-all;
+		}
+		/* 故障描述内容区域 */
+		.detail-content {
+			background-color: #FFFFFF;
+			padding: 10px 15px 15px 15px;
+		}
+		.detail-content p {
+			margin: 0;
+			padding: 0;
+			word-wrap: break-word;
+			word-break: break-all;
+			font-size: 14px;
+			line-height: 24px;
+			color: #666;
 		}
 	</style>
 

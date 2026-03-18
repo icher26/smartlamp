@@ -98,11 +98,16 @@
 		
 		mui(".mui-table-view").on('tap', '.mui-table-view-cell', function (e) {
 			var id = this.getAttribute('id');
+			// 从data_arr中查找完整数据
+			var selectedItem = data_arr.find(function(item) {
+				return item.id == id || item.id === parseInt(id);
+			});
 			mui.openWindow({
-				url: 'failure_details.html', 
+				url: 'failure_details.html',
 				id:'failure_details',
 				extras:{
-					detailId:id
+					detailId: id,
+					detailData: selectedItem  // 传递完整数据
 				}
 			});
 		})
