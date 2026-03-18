@@ -127,3 +127,11 @@ git config --global --unset https.proxy
 - 运行时读取 `unpackage/resources/H54765B43/www/` 目录
 - `unpackage/` 已加入 `.gitignore`，不纳入版本控制
 - ECharts 使用 2.x 版本，配置项使用 `x/y` 而非 `left/top`
+
+## 已知问题
+
+| 问题 | 状态 | 说明 |
+|------|------|------|
+| 故障添加API 500错误 | ❌ 待修复 | `/faults/addinfo` 接口后端Bug，详见交接文档 |
+| 后端重复控制器 | ⚠️ 待整合 | 存在 `/fault/*` 和 `/faults/*` 两套接口 |
+| 数据模型字段不一致 | ⚠️ 待统一 | `Fault.creatTime` 拼写错误 |

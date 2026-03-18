@@ -4,7 +4,37 @@
 
 ---
 
-## [1.1.0] - 2026-03-13
+## [1.3.0] - 2026-03-18
+
+### 修复
+
+- **failure_details.html** — 重构故障详情页面，修复数据显示问题
+  - 修复 HTML 结构错误（`</lebel>` 拼写错误、未闭合标签）
+  - 优化内容区域布局，解决数据被遮挡问题
+  - 添加备用数据获取逻辑（使用 `/faults/queryAll`）
+- **handled_fault.html** — 向详情页传递完整故障数据
+- **to_be_process.html** — 同上，优化数据传递
+- **repair_detail.html** — 修复维修人员删除功能
+  - API端点修正：`/repair/logicdelete` → `/repair/delete/{id}`
+  - 使用路径参数方式传递ID
+- **config.js** — 更新 `repairDelete` 端点配置
+
+### 测试验证
+
+- ✅ 故障详情页面数据显示正常
+- ✅ 维修人员删除功能正常
+- ✅ 路灯光亮状态（lampStatus）同步功能正常
+
+### 已知问题
+
+- ⚠️ 故障添加接口 `/faults/addinfo` 返回 500 错误，待后端修复
+  - 详细分析见：`D:\桌面\智能路灯-后端故障添加API问题交接文档.md`
+  - 后端存在重复控制器（`/fault/*` 和 `/faults/*`）
+  - 数据模型字段不一致（`Fault` vs `Faults`）
+
+---
+
+## [1.2.0] - 2026-03-16
 
 ### 修复
 
@@ -49,5 +79,7 @@
 
 ---
 
+[1.3.0]: https://github.com/icher26/smartlamp/compare/v1.2.0...v1.3.0
+[1.2.0]: https://github.com/icher26/smartlamp/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/icher26/smartlamp/compare/v1.0.0...v1.1.0
 [1.0.0]: https://github.com/icher26/smartlamp/releases/tag/v1.0.0
