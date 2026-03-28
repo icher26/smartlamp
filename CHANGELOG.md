@@ -4,6 +4,30 @@
 
 ---
 
+## [1.5.0] - 2026-03-28
+
+### 修复
+
+- **submit_failure.html** — 故障提交功能已正常工作
+  - 后端 `/faults/addinfo` 接口修复完成
+  - 故障数据提交包含完整字段（title、content、lightId、lightName、area等）
+  - Token认证正常携带
+
+### 测试验证
+
+- ✅ 故障提交功能正常
+- ✅ 故障列表查看正常
+- ✅ 故障标记已处理功能正常
+- ✅ 所有核心功能模块已验证通过
+
+### 文档
+
+- 更新 `README.md` 已知问题列表
+- 更新 `PROJECT_PROGRESS.md` 项目状态
+- 更新 `前后端联调交接文档.md` 测试清单
+
+---
+
 ## [1.3.0] - 2026-03-18
 
 ### 修复
@@ -27,10 +51,7 @@
 
 ### 已知问题
 
-- ⚠️ 故障添加接口 `/faults/addinfo` 返回 500 错误，待后端修复
-  - 详细分析见：`D:\桌面\智能路灯-后端故障添加API问题交接文档.md`
-  - 后端存在重复控制器（`/fault/*` 和 `/faults/*`）
-  - 数据模型字段不一致（`Fault` vs `Faults`）
+- ⚠️ 后端存在重复控制器（`/fault/*` 和 `/faults/*`），不影响功能使用
 
 ---
 
@@ -79,6 +100,8 @@
 
 ---
 
+[1.5.0]: https://github.com/icher26/smartlamp/compare/v1.4.0...v1.5.0
+[1.4.0]: https://github.com/icher26/smartlamp/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/icher26/smartlamp/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/icher26/smartlamp/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/icher26/smartlamp/compare/v1.0.0...v1.1.0

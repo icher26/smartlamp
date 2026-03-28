@@ -132,6 +132,5 @@ git config --global --unset https.proxy
 
 | 问题 | 状态 | 说明 |
 |------|------|------|
-| 故障添加API 500错误 | ❌ 待修复 | `/faults/addinfo` 接口后端Bug，详见交接文档 |
-| 后端重复控制器 | ⚠️ 待整合 | 存在 `/fault/*` 和 `/faults/*` 两套接口 |
-| 数据模型字段不一致 | ⚠️ 待统一 | `Fault.creatTime` 拼写错误 |
+| 后端重复控制器 | ⚠️ 待整合 | 存在 `/fault/*` 和 `/faults/*` 两套接口（不影响功能） |
+| 数据模型字段不一致 | ⚠️ 待统一 | `Fault` 模型字段拼写已修正为 `createTime` |
