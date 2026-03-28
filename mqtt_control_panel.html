@@ -1,0 +1,587 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>路灯MQTT控制面板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <link rel="stylesheet" href="css/mui.min.css">
+    <style>
+        .container {
+            padding: 15px;
+        }
+
+        .status-panel {
+            background: #f0f0f0;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+
+        .btn-control {
+            margin: 5px;
+            width: calc(50% - 10px);
+        }
+
+        .lamp-item {
+            border: 1px solid #ddd;
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 5px;
+        }
+
+        .lamp-on {
+            background-color: #e8f5e8;
+        }
+
+        .lamp-off {
+            background-color: #f5e8e8;
+        }
+
+        .fault-alert {
+            background-color: #ffe8e8;
+            color: red;
+            padding: 5px;
+            margin: 5px 0;
+            border-radius: 3px;
+        }
+
+        .mock-panel {
+            background: #fff3cd;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ffc107;
+        }
+
+        .mock-panel h4 {
+            color: #856404;
+            margin-top: 0;
+        }
+
+        .mock-active {
+            background: #d4edda !important;
+            border-color: #28a745 !important;
+        }
+
+        .mock-active h4 {
+            color: #155724 !important;
+        }
+    </style>
+</head>
+<body>
+    <header class="mui-bar mui-bar-nav">
+        <a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
+        <h1 class="mui-title">路灯MQTT控制</h1>
+    </header>
+
+    <div class="mui-content">
+        <div class="container">
+            <!-- 模拟测试面板 -->
+            <div class="mock-panel" id="mockPanel">
+                <h4>🔧 模拟测试模式</h4>
+                <p>状态: <span id="mockStatus">未启用</span></p>
+                <p>模拟设备: <span id="mockDevices">-</span></p>
+                <button id="enableMockBtn" class="mui-btn mui-btn-warning">启用模拟</button>
+                <button id="disableMockBtn" class="mui-btn mui-btn-grey" disabled>禁用模拟</button>
+                <button id="simulateFaultBtn" class="mui-btn mui-btn-danger" disabled>模拟故障</button>
+            </div>
+
+            <!-- MQTT连接状态 -->
+            <div class="status-panel">
+                <h4>MQTT连接状态</h4>
+                <p>状态: <span id="connectionStatus">未连接</span></p>
+                <p>连接数: <span id="reconnectCount">0</span></p>
+                <button id="connectBtn" class="mui-btn mui-btn-primary">连接MQTT</button>
+                <button id="disconnectBtn" class="mui-btn mui-btn-danger" disabled>断开连接</button>
+            </div>
+
+            <!-- 路灯控制 -->
+            <div class="mui-card">
+                <div class="mui-card-header">路灯控制</div>
+                <div class="mui-card-content">
+                    <div class="mui-input-row">
+                        <label>路灯ID:</label>
+                        <input type="text" id="lampIdInput" value="LAMP001" placeholder="输入路灯ID">
+                    </div>
+
+                    <div class="mui-button-row">
+                        <button id="turnOnBtn" class="mui-btn mui-btn-success btn-control">开灯</button>
+                        <button id="turnOffBtn" class="mui-btn mui-btn-warning btn-control">关灯</button>
+                    </div>
+
+                    <div class="mui-button-row">
+                        <button id="getLampStatusBtn" class="mui-btn mui-btn-info btn-control">获取状态</button>
+                        <button id="requestStatusBtn" class="mui-btn mui-btn-purple btn-control">请求状态</button>
+                    </div>
+
+                    <div class="mui-input-row">
+                        <label>亮度 (0-100):</label>
+                        <input type="range" id="brightnessSlider" min="0" max="100" value="50">
+                        <span id="brightnessValue">50</span>%
+                    </div>
+                    <button id="setBrightnessBtn" class="mui-btn mui-btn-blue mui-btn-block">设置亮度</button>
+                </div>
+            </div>
+
+            <!-- 路灯列表 -->
+            <div class="mui-card">
+                <div class="mui-card-header">路灯列表</div>
+                <div class="mui-card-content">
+                    <div id="lampList">
+                        <!-- 路灯列表将动态填充 -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- 消息日志 -->
+            <div class="mui-card">
+                <div class="mui-card-header">消息日志</div>
+                <div class="mui-card-content">
+                    <div id="messageLog" style="height: 200px; overflow-y: scroll; background: #f9f9f9; padding: 10px; font-size: 12px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/mui.min.js"></script>
+    <script src="libs/paho-mqtt.js"></script>
+    <script src="js/mqtt-client.js"></script>
+    <script>
+        mui.init();
+
+        // 全局变量
+        let mqttClient = null;
+        let lampController = null;
+        let connectedLamps = new Map(); // 存储已连接的路灯
+        let mockSimulator = null; // 模拟设备测试器
+
+        // DOM元素
+        const connectionStatusEl = document.getElementById('connectionStatus');
+        const reconnectCountEl = document.getElementById('reconnectCount');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const turnOnBtn = document.getElementById('turnOnBtn');
+        const turnOffBtn = document.getElementById('turnOffBtn');
+        const getLampStatusBtn = document.getElementById('getLampStatusBtn');
+        const requestStatusBtn = document.getElementById('requestStatusBtn');
+        const setBrightnessBtn = document.getElementById('setBrightnessBtn');
+        const lampIdInput = document.getElementById('lampIdInput');
+        const brightnessSlider = document.getElementById('brightnessSlider');
+        const brightnessValue = document.getElementById('brightnessValue');
+        const lampListEl = document.getElementById('lampList');
+        const messageLogEl = document.getElementById('messageLog');
+
+        // 模拟测试DOM元素
+        const mockPanel = document.getElementById('mockPanel');
+        const mockStatusEl = document.getElementById('mockStatus');
+        const mockDevicesEl = document.getElementById('mockDevices');
+        const enableMockBtn = document.getElementById('enableMockBtn');
+        const disableMockBtn = document.getElementById('disableMockBtn');
+        const simulateFaultBtn = document.getElementById('simulateFaultBtn');
+
+        // 更新亮度显示
+        brightnessSlider.addEventListener('input', function() {
+            brightnessValue.textContent = this.value;
+        });
+
+        // ========== 模拟测试功能 ==========
+
+        // 启用模拟模式
+        enableMockBtn.addEventListener('tap', function() {
+            if (!mqttClient) {
+                // 初始化MQTT客户端（模拟模式不需要真实连接）
+                mqttClient = new SmartLampMQTT.MQTTClient();
+                mqttClient.isConnected = true; // 模拟已连接
+                lampController = new SmartLampMQTT.LampController(mqttClient);
+            }
+
+            // 创建模拟设备测试器
+            mockSimulator = new SmartLampMQTT.MockDeviceSimulator(mqttClient);
+
+            // 启用模拟模式（默认模拟3个设备）
+            mockSimulator.enable(['LAMP001', 'LAMP002', 'LAMP003']);
+
+            // 更新UI
+            mockPanel.classList.add('mock-active');
+            mockStatusEl.textContent = '✅ 已启用';
+            mockStatusEl.style.color = '#155724';
+            mockDevicesEl.textContent = mockSimulator.getSimulatedDevices().join(', ');
+
+            enableMockBtn.disabled = true;
+            disableMockBtn.disabled = false;
+            simulateFaultBtn.disabled = false;
+
+            // 更新连接状态显示
+            connectionStatusEl.textContent = '模拟模式';
+            connectionStatusEl.style.color = '#856404';
+
+            // 更新lampIdInput默认值
+            lampIdInput.value = 'LAMP001';
+
+            logMessage('模拟测试模式已启用', 'warn');
+            logMessage('模拟设备: LAMP001, LAMP002, LAMP003', 'info');
+        });
+
+        // 禁用模拟模式
+        disableMockBtn.addEventListener('tap', function() {
+            if (mockSimulator) {
+                mockSimulator.disable();
+                mockSimulator = null;
+            }
+
+            // 更新UI
+            mockPanel.classList.remove('mock-active');
+            mockStatusEl.textContent = '未启用';
+            mockStatusEl.style.color = '#856404';
+            mockDevicesEl.textContent = '-';
+
+            enableMockBtn.disabled = false;
+            disableMockBtn.disabled = true;
+            simulateFaultBtn.disabled = true;
+
+            // 清空设备列表
+            connectedLamps.clear();
+            renderLampList();
+
+            connectionStatusEl.textContent = '未连接';
+            connectionStatusEl.style.color = '';
+
+            logMessage('模拟测试模式已禁用', 'warn');
+        });
+
+        // 模拟故障告警
+        simulateFaultBtn.addEventListener('tap', function() {
+            const lampId = lampIdInput.value.trim();
+            if (mockSimulator && lampId) {
+                mockSimulator.simulateFaultAlert(lampId, 'battery_low');
+                logMessage(`模拟 ${lampId} 故障告警已发送`, 'warn');
+            }
+        });
+
+        // ========== MQTT连接功能 ==========
+
+        // 日志记录函数
+        function logMessage(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = document.createElement('div');
+            logEntry.innerHTML = `<small>[${timestamp}] <span style="color:${type==='error'?'red':type==='warn'?'orange':'#666'}">${message}</span></small>`;
+            messageLogEl.appendChild(logEntry);
+            messageLogEl.scrollTop = messageLogEl.scrollHeight;
+        }
+
+        // 连接MQTT
+        connectBtn.addEventListener('tap', function() {
+            if (!mqttClient) {
+                mqttClient = new SmartLampMQTT.MQTTClient();
+                lampController = new SmartLampMQTT.LampController(mqttClient);
+
+                // 更新连接状态
+                updateConnectionStatus();
+
+                mqttClient.connect(
+                    function() {
+                        logMessage('MQTT连接成功');
+                        updateConnectionStatus();
+
+                        // 订阅路灯状态更新
+                        mqttClient.subscribeToAllLampStatus(function(lampId, data) {
+                            logMessage(`路灯 ${lampId} 状态更新: ${JSON.stringify(data)}`);
+                            updateLampStatus(lampId, data);
+                        });
+
+                        // 订阅故障告警
+                        mqttClient.subscribeToFaultAlerts(function(lampId, data) {
+                            logMessage(`路灯 ${lampId} 故障告警: ${JSON.stringify(data)}`, 'error');
+                            showFaultAlert(lampId, data);
+                        });
+                    },
+                    function(error) {
+                        logMessage(`MQTT连接失败: ${error}`, 'error');
+                        updateConnectionStatus();
+                    }
+                );
+            } else if (!mqttClient.isConnected) {
+                mqttClient.connect(
+                    function() {
+                        logMessage('MQTT重新连接成功');
+                        updateConnectionStatus();
+                    },
+                    function(error) {
+                        logMessage(`MQTT重新连接失败: ${error}`, 'error');
+                        updateConnectionStatus();
+                    }
+                );
+            }
+        });
+
+        // 断开MQTT连接
+        disconnectBtn.addEventListener('tap', function() {
+            if (mqttClient) {
+                mqttClient.disconnect();
+                logMessage('MQTT连接已断开');
+                updateConnectionStatus();
+            }
+        });
+
+        // 开灯
+        turnOnBtn.addEventListener('tap', function() {
+            const lampId = lampIdInput.value.trim();
+            if (!lampId) {
+                logMessage('请输入路灯ID', 'warn');
+                return;
+            }
+
+            // 模拟模式处理
+            if (mockSimulator && mockSimulator.isEnabled) {
+                const topic = `smartlamp/control/${lampId}/turn_on`;
+                const command = {
+                    commandId: 'cmd_' + Date.now(),
+                    timestamp: Date.now(),
+                    type: 'control_command',
+                    action: { type: 'turn_on', params: { lampStatus: 1 } }
+                };
+                mockSimulator.handleControlCommand(topic, command);
+                logMessage(`[模拟] 向路灯 ${lampId} 发送开灯命令`);
+                return;
+            }
+
+            // 真实MQTT模式
+            if (lampController) {
+                const success = lampController.turnOnLight(lampId);
+                if (success) {
+                    logMessage(`向路灯 ${lampId} 发送开灯命令`);
+                } else {
+                    logMessage(`发送开灯命令失败`, 'error');
+                }
+            } else {
+                logMessage('请先连接MQTT或启用模拟模式', 'warn');
+            }
+        });
+
+        // 关灯
+        turnOffBtn.addEventListener('tap', function() {
+            const lampId = lampIdInput.value.trim();
+            if (!lampId) {
+                logMessage('请输入路灯ID', 'warn');
+                return;
+            }
+
+            // 模拟模式处理
+            if (mockSimulator && mockSimulator.isEnabled) {
+                const topic = `smartlamp/control/${lampId}/turn_off`;
+                const command = {
+                    commandId: 'cmd_' + Date.now(),
+                    timestamp: Date.now(),
+                    type: 'control_command',
+                    action: { type: 'turn_off', params: { lampStatus: 0 } }
+                };
+                mockSimulator.handleControlCommand(topic, command);
+                logMessage(`[模拟] 向路灯 ${lampId} 发送关灯命令`);
+                return;
+            }
+
+            // 真实MQTT模式
+            if (lampController) {
+                const success = lampController.turnOffLight(lampId);
+                if (success) {
+                    logMessage(`向路灯 ${lampId} 发送关灯命令`);
+                } else {
+                    logMessage(`发送关灯命令失败`, 'error');
+                }
+            } else {
+                logMessage('请先连接MQTT或启用模拟模式', 'warn');
+            }
+        });
+
+        // 设置亮度
+        setBrightnessBtn.addEventListener('tap', function() {
+            const lampId = lampIdInput.value.trim();
+            const brightness = parseInt(brightnessSlider.value);
+            if (!lampId) {
+                logMessage('请输入路灯ID', 'warn');
+                return;
+            }
+
+            // 模拟模式处理
+            if (mockSimulator && mockSimulator.isEnabled) {
+                const topic = `smartlamp/control/${lampId}/set_brightness`;
+                const command = {
+                    commandId: 'cmd_' + Date.now(),
+                    timestamp: Date.now(),
+                    type: 'control_command',
+                    action: { type: 'set_brightness', params: { brightness: brightness } }
+                };
+                mockSimulator.handleControlCommand(topic, command);
+                logMessage(`[模拟] 向路灯 ${lampId} 设置亮度为 ${brightness}%`);
+                return;
+            }
+
+            // 真实MQTT模式
+            if (lampController) {
+                const success = lampController.setBrightness(lampId, brightness);
+                if (success) {
+                    logMessage(`向路灯 ${lampId} 设置亮度为 ${brightness}%`);
+                } else {
+                    logMessage(`发送亮度设置命令失败`, 'error');
+                }
+            } else {
+                logMessage('请先连接MQTT或启用模拟模式', 'warn');
+            }
+        });
+
+        // 获取路灯状态
+        getLampStatusBtn.addEventListener('tap', function() {
+            const lampId = lampIdInput.value.trim();
+            if (!lampId) {
+                logMessage('请输入路灯ID', 'warn');
+                return;
+            }
+
+            // 模拟模式处理
+            if (mockSimulator && mockSimulator.isEnabled) {
+                const status = mockSimulator.getSimulatedDeviceStatus(lampId);
+                if (status) {
+                    logMessage(`[模拟] 路灯 ${lampId} 当前状态:`);
+                    logMessage(`  灯状态: ${status.lampStatus === 1 ? '开启' : '关闭'}`);
+                    logMessage(`  运行模式: ${status.mode === 1 ? '自动' : '手动'}`);
+                    logMessage(`  亮度: ${status.brightness}%`);
+                    logMessage(`  电池电量: ${Math.floor(status.batteryLevel)}%`);
+                } else {
+                    logMessage(`[模拟] 路灯 ${lampId} 不在模拟列表中`, 'warn');
+                }
+                return;
+            }
+
+            // 真实MQTT模式
+            if (lampController) {
+                const status = lampController.getLampStatus(lampId);
+                if (status) {
+                    logMessage(`路灯 ${lampId} 当前状态: ${JSON.stringify(status)}`);
+                } else {
+                    logMessage(`路灯 ${lampId} 状态未获取到`, 'warn');
+                }
+            } else {
+                logMessage('请先连接MQTT或启用模拟模式', 'warn');
+            }
+        });
+
+        // 请求路灯状态
+        requestStatusBtn.addEventListener('tap', function() {
+            const lampId = lampIdInput.value.trim();
+            if (!lampId) {
+                logMessage('请输入路灯ID', 'warn');
+                return;
+            }
+
+            // 模拟模式处理
+            if (mockSimulator && mockSimulator.isEnabled) {
+                mockSimulator.publishDeviceStatus(lampId);
+                logMessage(`[模拟] 请求路灯 ${lampId} 状态`);
+                return;
+            }
+
+            // 真实MQTT模式
+            if (mqttClient) {
+                const success = mqttClient.requestLampStatus(lampId);
+                if (success) {
+                    logMessage(`向路灯 ${lampId} 请求状态`);
+                } else {
+                    logMessage(`请求路灯状态失败`, 'error');
+                }
+            } else {
+                logMessage('请先连接MQTT或启用模拟模式', 'warn');
+            }
+        });
+
+        // 更新连接状态显示
+        function updateConnectionStatus() {
+            if (mqttClient) {
+                const status = mqttClient.getConnectionStatus();
+                connectionStatusEl.textContent = status.isConnected ? '已连接' : '未连接';
+                reconnectCountEl.textContent = status.reconnectAttempts;
+
+                // 根据连接状态启用/禁用按钮
+                connectBtn.disabled = status.isConnected;
+                disconnectBtn.disabled = !status.isConnected;
+            } else {
+                connectionStatusEl.textContent = '未初始化';
+                reconnectCountEl.textContent = '0';
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        // 更新路灯状态显示
+        function updateLampStatus(lampId, data) {
+            connectedLamps.set(lampId, data);
+            renderLampList();
+        }
+
+        // 显示故障告警
+        function showFaultAlert(lampId, data) {
+            // 在路灯列表中显示故障告警
+            const alertDiv = document.createElement('div');
+            alertDiv.className = 'fault-alert';
+            alertDiv.textContent = `路灯 ${lampId} 发生故障: ${data.message || JSON.stringify(data)}`;
+            document.body.appendChild(alertDiv);
+
+            // 3秒后移除告警
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.parentNode.removeChild(alertDiv);
+                }
+            }, 3000);
+        }
+
+        // 渲染路灯列表
+        function renderLampList() {
+            lampListEl.innerHTML = '';
+
+            if (connectedLamps.size === 0) {
+                lampListEl.innerHTML = '<p>暂无路灯状态数据</p>';
+                return;
+            }
+
+            connectedLamps.forEach((data, lampId) => {
+                const lampItem = document.createElement('div');
+                lampItem.className = 'lamp-item';
+
+                // 根据灯的状态设置样式
+                if (data.data && data.data.lampStatus === 1) {
+                    lampItem.classList.add('lamp-on');
+                } else {
+                    lampItem.classList.add('lamp-off');
+                }
+
+                // 解析数据
+                const lampData = data.data || {};
+                lampItem.innerHTML = `
+                    <h5>路灯ID: ${lampId}</h5>
+                    <p>名称: ${lampData.byname || '未知'}</p>
+                    <p>区域: ${lampData.area || '未知'}</p>
+                    <p>状态: ${lampData.lampStatus === 1 ? '开启' : lampData.lampStatus === 0 ? '关闭' : '未知'}</p>
+                    <p>模式: ${lampData.mode === 0 ? '手动' : lampData.mode === 1 ? '自动' : '未知'}</p>
+                    <p>电池电量: ${lampData.battrayPackOneCharge || 'N/A'}V</p>
+                    <p>位置: ${lampData.longitude || 'N/A'}, ${lampData.latitude || 'N/A'}</p>
+                    <p>更新时间: ${data.updateTime ? new Date(data.updateTime).toLocaleString() : 'N/A'}</p>
+                `;
+
+                lampListEl.appendChild(lampItem);
+            });
+        }
+
+        // 定期更新连接状态
+        setInterval(updateConnectionStatus, 1000);
+
+        // 页面加载完成后初始化
+        document.addEventListener('plusready', function() {
+            logMessage('页面加载完成，等待连接MQTT...');
+        });
+
+        // 如果在浏览器中运行
+        if (!window.plus) {
+            logMessage('在浏览器环境中运行，H5+ API不可用');
+        }
+    </script>
+</body>
+</html>

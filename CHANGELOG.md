@@ -4,6 +4,38 @@
 
 ---
 
+## [1.6.0] - 2026-03-28
+
+### 新增
+
+- **MQTT硬件联调交接文档** — `MQTT_HARDWARE_INTEGRATION.md`
+  - 详细的MQTT主题规范和消息格式
+  - 硬件端实现要求和示例代码
+  - 联调测试流程说明
+- **MQTT模拟测试功能** — `js/mqtt-client.js`
+  - 新增 `MockDeviceSimulator` 类
+  - 支持在没有真实硬件时模拟设备行为
+  - 模拟状态上报、心跳、命令执行响应
+  - 支持模拟故障告警
+
+### 优化
+
+- **mqtt_control_panel.html** — 添加模拟测试界面
+  - 新增模拟测试面板
+  - 启用/禁用模拟模式按钮
+  - 模拟故障告警按钮
+  - 控制命令支持模拟模式
+- **MQTT_INTEGRATION.md** — 更新文档
+  - 添加模拟测试模式说明
+  - 更新版本号至v1.1
+
+### 文档
+
+- 新增 `MQTT_HARDWARE_INTEGRATION.md` — 硬件端联调交接文档
+- 更新 `MQTT_INTEGRATION.md` — 添加模拟测试说明
+
+---
+
 ## [1.5.0] - 2026-03-28
 
 ### 修复
@@ -100,6 +132,7 @@
 
 ---
 
+[1.6.0]: https://github.com/icher26/smartlamp/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/icher26/smartlamp/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/icher26/smartlamp/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/icher26/smartlamp/compare/v1.2.0...v1.3.0
