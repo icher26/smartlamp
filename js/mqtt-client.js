@@ -2,16 +2,16 @@
  * MQTT客户端管理模块
  * 用于智能路灯管理系统与MQTT Broker的通信
  *
- * @version 1.1.0
+ * @version 1.0.0
  * @update 2026-03-28
- * @description 完善接口定义，添加模拟测试模式
+ * @description MQTT接口预留，等待硬件端联调
  */
 
 (function(window) {
     // MQTT客户端配置
     const MQTT_CONFIG = {
         // 使用WebSocket连接（推荐在移动端使用wss协议）
-        brokerUrl: 'ws://8.137.33.218:8083', // MQTT Broker WebSocket端口通常是8083
+        brokerUrl: 'ws://8.137.33.218:8083', // MQTT Broker WebSocket端口
         username: 'smartlamp_mobile',
         password: 'secure_password',
         clientId: 'smartlamp_mobile_' + Date.now(),
@@ -21,10 +21,7 @@
             keepAliveInterval: 60,
             cleanSession: true,
             useSSL: false // 生产环境建议使用wss
-        },
-        // 模拟模式配置（用于无硬件环境测试）
-        mockMode: false,
-        mockStatusInterval: 30000 // 模拟状态上报间隔（毫秒）
+        }
     };
 
     // MQTT主题定义
@@ -243,7 +240,6 @@
             // 重新订阅之前订阅的主题
             this.subscribedTopics.forEach(topic => {
                 console.log('恢复订阅:', topic);
-                // 这里可以根据需要重新注册处理器
             });
         }
 
@@ -251,7 +247,6 @@
          * 匹配主题模式
          */
         matchTopic(pattern, topic) {
-            // 简单的通配符匹配
             const regexPattern = pattern
                 .replace(/\+/g, '[^/]+')  // 单层通配符
                 .replace(/#/g, '.*');     // 多层通配符
@@ -298,9 +293,8 @@
         subscribeToAllLampStatus(callback) {
             const topic = 'smartlamp/status/+/report';
             return this.subscribe(topic, (topic, data) => {
-                // 从主题中提取路灯ID
                 const parts = topic.split('/');
-                const lampId = parts[2]; // smartlamp/status/{lampId}/report
+                const lampId = parts[2];
                 if (callback) callback(lampId, data);
             });
         }
@@ -311,9 +305,8 @@
         subscribeToFaultAlerts(callback) {
             const topic = 'smartlamp/fault/+/alert';
             return this.subscribe(topic, (topic, data) => {
-                // 从主题中提取路灯ID
                 const parts = topic.split('/');
-                const lampId = parts[2]; // smartlamp/fault/{lampId}/alert
+                const lampId = parts[2];
                 if (callback) callback(lampId, data);
             });
         }
@@ -405,7 +398,7 @@
     class LampController {
         constructor(mqttClient) {
             this.mqttClient = mqttClient;
-            this.lampStatusMap = new Map(); // 存储路灯状态
+            this.lampStatusMap = new Map();
         }
 
         /**
@@ -422,15 +415,8 @@
         /**
          * 控制单个路灯
          */
-        controlLamp(lampId, command) {
-            const topic = TOPICS.CONTROL_COMMAND + lampId;
-            const message = {
-                ...command,
-                timestamp: Date.now(),
-                commandId: 'cmd_' + Date.now()
-            };
-
-            return this.mqttClient.publish(topic, message);
+        controlLamp(lampId, operation, params = {}) {
+            return this.mqttClient.sendLampCommand(lampId, operation, params);
         }
 
         /**
@@ -456,7 +442,6 @@
                 updateTime: Date.now()
             });
 
-            // 可以在这里添加状态变化的通知逻辑
             console.log(`路灯${lampId}状态已更新:`, statusData);
         }
 
@@ -472,19 +457,6 @@
          */
         getAllLampStatuses() {
             return Object.fromEntries(this.lampStatusMap);
-        }
-
-        /**
-         * 发送路灯控制命令
-         */
-        controlLamp(lampId, operation, params = {}) {
-            const command = {
-                type: 'light_control',
-                operation: operation,
-                params: params
-            };
-
-            return this.mqttClient.sendLampCommand(lampId, operation, params);
         }
 
         /**
@@ -522,22 +494,10 @@
             const status = this.lampStatusMap.get(lampId);
             if (!status) {
                 console.warn(`路灯 ${lampId} 的状态尚未获取到`);
-                // 可以发送请求来获取路灯状态
                 this.mqttClient.requestLampStatus(lampId);
                 return null;
             }
             return status;
-        }
-
-        /**
-         * 获取多个路灯的状态
-         */
-        getLampStatuses(lampIds) {
-            const statuses = {};
-            lampIds.forEach(id => {
-                statuses[id] = this.getLampStatus(id);
-            });
-            return statuses;
         }
 
         /**
@@ -562,311 +522,8 @@
         MQTTClient,
         LampController,
         TOPICS,
-        MQTT_CONFIG,
-        // 新增：模拟测试器
-        MockDeviceSimulator: null // 将在下方定义
+        MQTT_CONFIG
     };
 
-    /**
-     * 模拟设备测试器
-     * 用于在没有真实硬件时模拟设备行为，验证前端MQTT逻辑
-     */
-    class MockDeviceSimulator {
-        constructor(mqttClient) {
-            this.mqttClient = mqttClient;
-            this.simulatedDevices = new Map();
-            this.statusInterval = null;
-            this.heartbeatInterval = null;
-            this.isEnabled = false;
-        }
-
-        /**
-         * 启用模拟模式
-         */
-        enable(deviceList = ['LAMP001', 'LAMP002', 'LAMP003']) {
-            this.isEnabled = true;
-            this.simulatedDevices.clear();
-
-            // 初始化模拟设备
-            deviceList.forEach(deviceId => {
-                this.simulatedDevices.set(deviceId, {
-                    deviceId: deviceId,
-                    status: 1,
-                    lampStatus: Math.random() > 0.5 ? 1 : 0,
-                    mode: Math.random() > 0.5 ? 1 : 0,
-                    brightness: Math.floor(Math.random() * 100),
-                    area: ['A区', 'B区', 'C区'][Math.floor(Math.random() * 3)],
-                    byname: `模拟路灯${deviceId}`,
-                    batteryLevel: Math.floor(Math.random() * 100),
-                    batteryVoltage: 3.0 + Math.random() * 0.6,
-                    temperature: 20 + Math.random() * 15
-                });
-            });
-
-            console.log('模拟设备已启用，设备列表:', deviceList);
-            this.startSimulation();
-        }
-
-        /**
-         * 禁用模拟模式
-         */
-        disable() {
-            this.isEnabled = false;
-            this.stopSimulation();
-            this.simulatedDevices.clear();
-            console.log('模拟设备已禁用');
-        }
-
-        /**
-         * 启动模拟定时器
-         */
-        startSimulation() {
-            // 定期上报状态
-            this.statusInterval = setInterval(() => {
-                this.publishAllStatus();
-            }, MQTT_CONFIG.mockStatusInterval);
-
-            // 定期心跳
-            this.heartbeatInterval = setInterval(() => {
-                this.publishAllHeartbeats();
-            }, 30000);
-
-            // 立即发送一次状态
-            this.publishAllStatus();
-        }
-
-        /**
-         * 停止模拟定时器
-         */
-        stopSimulation() {
-            if (this.statusInterval) {
-                clearInterval(this.statusInterval);
-                this.statusInterval = null;
-            }
-            if (this.heartbeatInterval) {
-                clearInterval(this.heartbeatInterval);
-                this.heartbeatInterval = null;
-            }
-        }
-
-        /**
-         * 发布所有设备状态
-         */
-        publishAllStatus() {
-            this.simulatedDevices.forEach((device, deviceId) => {
-                this.publishDeviceStatus(deviceId);
-            });
-        }
-
-        /**
-         * 发布单个设备状态
-         */
-        publishDeviceStatus(deviceId) {
-            const device = this.simulatedDevices.get(deviceId);
-            if (!device) return;
-
-            // 模拟状态变化
-            if (device.mode === 1) { // 自动模式时随机变化
-                device.lampStatus = Math.random() > 0.3 ? 1 : 0;
-                device.batteryLevel = Math.max(10, device.batteryLevel - Math.random() * 2);
-            }
-
-            const statusMessage = {
-                deviceId: deviceId,
-                timestamp: Date.now(),
-                type: 'status_report',
-                data: {
-                    status: device.status,
-                    lampStatus: device.lampStatus,
-                    mode: device.mode,
-                    brightness: device.brightness,
-                    area: device.area,
-                    byname: device.byname,
-                    lightId: deviceId,
-                    batteryVoltage: device.batteryVoltage,
-                    batteryLevel: Math.floor(device.batteryLevel),
-                    temperature: device.temperature.toFixed(1)
-                },
-                metadata: {
-                    version: '1.0',
-                    source: 'mock_device'
-                }
-            };
-
-            // 通过MQTT发布（或直接触发回调）
-            const topic = `smartlamp/status/${deviceId}/report`;
-            this.simulateMessageArrived(topic, statusMessage);
-        }
-
-        /**
-         * 发布所有设备心跳
-         */
-        publishAllHeartbeats() {
-            this.simulatedDevices.forEach((device, deviceId) => {
-                this.publishHeartbeat(deviceId);
-            });
-        }
-
-        /**
-         * 发布心跳
-         */
-        publishHeartbeat(deviceId) {
-            const heartbeatMessage = {
-                deviceId: deviceId,
-                timestamp: Date.now(),
-                type: 'heartbeat',
-                status: 'alive',
-                uptime: Math.floor(Math.random() * 3600)
-            };
-
-            const topic = `smartlamp/heartbeat/${deviceId}/ping`;
-            this.simulateMessageArrived(topic, heartbeatMessage);
-        }
-
-        /**
-         * 模拟消息到达（触发订阅回调）
-         */
-        simulateMessageArrived(topic, message) {
-            if (this.mqttClient && this.mqttClient.messageHandlers) {
-                for (let [pattern, handler] of this.mqttClient.messageHandlers) {
-                    if (this.mqttClient.matchTopic(pattern, topic)) {
-                        handler(topic, message);
-                        break;
-                    }
-                }
-            }
-            console.log('[模拟] 消息到达:', topic, message);
-        }
-
-        /**
-         * 处理控制命令（模拟设备响应）
-         */
-        handleControlCommand(topic, command) {
-            const parts = topic.split('/');
-            const deviceId = parts[2];
-            const commandType = parts[3];
-
-            const device = this.simulatedDevices.get(deviceId);
-            if (!device) {
-                console.warn('[模拟] 未找到设备:', deviceId);
-                return;
-            }
-
-            console.log('[模拟] 收到命令:', commandType, '设备:', deviceId);
-
-            // 执行命令
-            let success = true;
-            let previousStatus = device.lampStatus;
-
-            switch (commandType) {
-                case 'turn_on':
-                    device.lampStatus = 1;
-                    break;
-                case 'turn_off':
-                    device.lampStatus = 0;
-                    break;
-                case 'set_brightness':
-                    device.brightness = command.action.params.brightness || 50;
-                    break;
-                case 'set_angle':
-                    // 模拟角度设置
-                    console.log('[模拟] 设置角度:', command.action.params);
-                    break;
-                case 'auto_mode':
-                    device.mode = 1;
-                    break;
-                case 'manual_mode':
-                    device.mode = 0;
-                    break;
-                case 'status_request':
-                    this.publishDeviceStatus(deviceId);
-                    return;
-                default:
-                    console.warn('[模拟] 未知命令:', commandType);
-                    success = false;
-            }
-
-            // 发送响应
-            const responseTopic = `smartlamp/response/${deviceId}/${command.commandId}`;
-            const responseMessage = {
-                responseId: 'resp_' + Date.now(),
-                originalCommandId: command.commandId,
-                timestamp: Date.now(),
-                type: 'command_response',
-                status: success ? 'success' : 'error',
-                result: {
-                    code: success ? 200 : 400,
-                    message: success ? '执行成功' : '执行失败'
-                },
-                data: {
-                    previousStatus: previousStatus,
-                    currentStatus: device.lampStatus
-                }
-            };
-
-            this.simulateMessageArrived(responseTopic, responseMessage);
-
-            // 状态变化后上报新状态
-            this.publishDeviceStatus(deviceId);
-        }
-
-        /**
-         * 模拟故障告警
-         */
-        simulateFaultAlert(deviceId, faultType = 'battery_low') {
-            const faultMessages = {
-                'battery_low': {
-                    code: 'FAULT_001',
-                    message: '电池电量低于20%',
-                    severity: 'high'
-                },
-                'temperature_high': {
-                    code: 'FAULT_006',
-                    message: '设备温度过高',
-                    severity: 'medium'
-                },
-                'communication_fault': {
-                    code: 'FAULT_007',
-                    message: '通信异常',
-                    severity: 'high'
-                }
-            };
-
-            const fault = faultMessages[faultType] || faultMessages['battery_low'];
-            const alertMessage = {
-                deviceId: deviceId,
-                timestamp: Date.now(),
-                type: 'fault_alert',
-                severity: fault.severity,
-                fault: {
-                    code: fault.code,
-                    type: faultType,
-                    message: fault.message
-                },
-                suggestion: '请及时处理'
-            };
-
-            const topic = `smartlamp/fault/${deviceId}/alert`;
-            this.simulateMessageArrived(topic, alertMessage);
-        }
-
-        /**
-         * 获取模拟设备列表
-         */
-        getSimulatedDevices() {
-            return Array.from(this.simulatedDevices.keys());
-        }
-
-        /**
-         * 获取模拟设备状态
-         */
-        getSimulatedDeviceStatus(deviceId) {
-            return this.simulatedDevices.get(deviceId);
-        }
-    }
-
-    // 更新导出
-    window.SmartLampMQTT.MockDeviceSimulator = MockDeviceSimulator;
-
-    console.log('SmartLamp MQTT模块已加载 (v1.1.0 - 含模拟测试功能)');
+    console.log('SmartLamp MQTT模块已加载 (v1.0.0) - 等待硬件联调');
 })(window);

@@ -8,31 +8,26 @@
 
 ### 新增
 
-- **MQTT硬件联调交接文档** — `MQTT_HARDWARE_INTEGRATION.md`
-  - 详细的MQTT主题规范和消息格式
-  - 硬件端实现要求和示例代码
-  - 联调测试流程说明
-- **MQTT模拟测试功能** — `js/mqtt-client.js`
-  - 新增 `MockDeviceSimulator` 类
-  - 支持在没有真实硬件时模拟设备行为
-  - 模拟状态上报、心跳、命令执行响应
-  - 支持模拟故障告警
+- **MQTT物联网接口预留** — 等待硬件端联调
+  - `js/mqtt-client.js` - MQTT客户端核心模块
+  - `libs/paho-mqtt.js` - Paho MQTT JavaScript库
+  - `mqtt_control_panel.html` - MQTT控制面板
 
-### 优化
+- **MQTT联调文档**
+  - `MQTT_HARDWARE_INTEGRATION.md` - 硬件端联调交接文档
+  - `MQTT_INTEGRATION.md` - MQTT集成设计文档
+  - `MQTT_INTEGRATION_PLAN.md` - MQTT实施计划
 
-- **mqtt_control_panel.html** — 添加模拟测试界面
-  - 新增模拟测试面板
-  - 启用/禁用模拟模式按钮
-  - 模拟故障告警按钮
-  - 控制命令支持模拟模式
-- **MQTT_INTEGRATION.md** — 更新文档
-  - 添加模拟测试模式说明
-  - 更新版本号至v1.1
+- **管理页面入口** — `management.html` 新增"物联网控制"菜单
 
-### 文档
+### 接口预留
 
-- 新增 `MQTT_HARDWARE_INTEGRATION.md` — 硬件端联调交接文档
-- 更新 `MQTT_INTEGRATION.md` — 添加模拟测试说明
+| 接口 | 说明 |
+|------|------|
+| `MQTTClient` | MQTT连接、订阅、发布 |
+| `LampController` | 路灯控制（开灯/关灯/亮度/角度） |
+| 状态订阅 | 订阅设备状态上报和故障告警 |
+| 群组控制 | 按区域批量控制路灯 |
 
 ---
 

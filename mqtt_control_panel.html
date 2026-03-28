@@ -45,26 +45,18 @@
             border-radius: 3px;
         }
 
-        .mock-panel {
-            background: #fff3cd;
-            padding: 10px;
+        .waiting-panel {
+            background: #e3f2fd;
+            padding: 15px;
             margin: 10px 0;
             border-radius: 5px;
-            border: 1px solid #ffc107;
+            border: 1px solid #2196f3;
+            text-align: center;
         }
 
-        .mock-panel h4 {
-            color: #856404;
+        .waiting-panel h4 {
+            color: #1565c0;
             margin-top: 0;
-        }
-
-        .mock-active {
-            background: #d4edda !important;
-            border-color: #28a745 !important;
-        }
-
-        .mock-active h4 {
-            color: #155724 !important;
         }
     </style>
 </head>
@@ -76,21 +68,18 @@
 
     <div class="mui-content">
         <div class="container">
-            <!-- 模拟测试面板 -->
-            <div class="mock-panel" id="mockPanel">
-                <h4>🔧 模拟测试模式</h4>
-                <p>状态: <span id="mockStatus">未启用</span></p>
-                <p>模拟设备: <span id="mockDevices">-</span></p>
-                <button id="enableMockBtn" class="mui-btn mui-btn-warning">启用模拟</button>
-                <button id="disableMockBtn" class="mui-btn mui-btn-grey" disabled>禁用模拟</button>
-                <button id="simulateFaultBtn" class="mui-btn mui-btn-danger" disabled>模拟故障</button>
+            <!-- 等待硬件联调提示 -->
+            <div class="waiting-panel">
+                <h4>⏳ 等待硬件联调</h4>
+                <p>MQTT接口已预留，需要硬件端完成对接后才能使用</p>
+                <p>详见文档: <strong>MQTT_HARDWARE_INTEGRATION.md</strong></p>
             </div>
 
             <!-- MQTT连接状态 -->
             <div class="status-panel">
                 <h4>MQTT连接状态</h4>
                 <p>状态: <span id="connectionStatus">未连接</span></p>
-                <p>连接数: <span id="reconnectCount">0</span></p>
+                <p>重连次数: <span id="reconnectCount">0</span></p>
                 <button id="connectBtn" class="mui-btn mui-btn-primary">连接MQTT</button>
                 <button id="disconnectBtn" class="mui-btn mui-btn-danger" disabled>断开连接</button>
             </div>
@@ -101,7 +90,7 @@
                 <div class="mui-card-content">
                     <div class="mui-input-row">
                         <label>路灯ID:</label>
-                        <input type="text" id="lampIdInput" value="LAMP001" placeholder="输入路灯ID">
+                        <input type="text" id="lampIdInput" value="" placeholder="输入路灯物理编号">
                     </div>
 
                     <div class="mui-button-row">
@@ -125,10 +114,12 @@
 
             <!-- 路灯列表 -->
             <div class="mui-card">
-                <div class="mui-card-header">路灯列表</div>
+                <div class="mui-card-header">路灯列表（实时状态）</div>
                 <div class="mui-card-content">
                     <div id="lampList">
-                        <!-- 路灯列表将动态填充 -->
+                        <p style="color: #999; text-align: center; padding: 20px;">
+                            等待硬件设备上线后显示...
+                        </p>
                     </div>
                 </div>
             </div>
@@ -152,8 +143,7 @@
         // 全局变量
         let mqttClient = null;
         let lampController = null;
-        let connectedLamps = new Map(); // 存储已连接的路灯
-        let mockSimulator = null; // 模拟设备测试器
+        let connectedLamps = new Map();
 
         // DOM元素
         const connectionStatusEl = document.getElementById('connectionStatus');
@@ -171,94 +161,10 @@
         const lampListEl = document.getElementById('lampList');
         const messageLogEl = document.getElementById('messageLog');
 
-        // 模拟测试DOM元素
-        const mockPanel = document.getElementById('mockPanel');
-        const mockStatusEl = document.getElementById('mockStatus');
-        const mockDevicesEl = document.getElementById('mockDevices');
-        const enableMockBtn = document.getElementById('enableMockBtn');
-        const disableMockBtn = document.getElementById('disableMockBtn');
-        const simulateFaultBtn = document.getElementById('simulateFaultBtn');
-
         // 更新亮度显示
         brightnessSlider.addEventListener('input', function() {
             brightnessValue.textContent = this.value;
         });
-
-        // ========== 模拟测试功能 ==========
-
-        // 启用模拟模式
-        enableMockBtn.addEventListener('tap', function() {
-            if (!mqttClient) {
-                // 初始化MQTT客户端（模拟模式不需要真实连接）
-                mqttClient = new SmartLampMQTT.MQTTClient();
-                mqttClient.isConnected = true; // 模拟已连接
-                lampController = new SmartLampMQTT.LampController(mqttClient);
-            }
-
-            // 创建模拟设备测试器
-            mockSimulator = new SmartLampMQTT.MockDeviceSimulator(mqttClient);
-
-            // 启用模拟模式（默认模拟3个设备）
-            mockSimulator.enable(['LAMP001', 'LAMP002', 'LAMP003']);
-
-            // 更新UI
-            mockPanel.classList.add('mock-active');
-            mockStatusEl.textContent = '✅ 已启用';
-            mockStatusEl.style.color = '#155724';
-            mockDevicesEl.textContent = mockSimulator.getSimulatedDevices().join(', ');
-
-            enableMockBtn.disabled = true;
-            disableMockBtn.disabled = false;
-            simulateFaultBtn.disabled = false;
-
-            // 更新连接状态显示
-            connectionStatusEl.textContent = '模拟模式';
-            connectionStatusEl.style.color = '#856404';
-
-            // 更新lampIdInput默认值
-            lampIdInput.value = 'LAMP001';
-
-            logMessage('模拟测试模式已启用', 'warn');
-            logMessage('模拟设备: LAMP001, LAMP002, LAMP003', 'info');
-        });
-
-        // 禁用模拟模式
-        disableMockBtn.addEventListener('tap', function() {
-            if (mockSimulator) {
-                mockSimulator.disable();
-                mockSimulator = null;
-            }
-
-            // 更新UI
-            mockPanel.classList.remove('mock-active');
-            mockStatusEl.textContent = '未启用';
-            mockStatusEl.style.color = '#856404';
-            mockDevicesEl.textContent = '-';
-
-            enableMockBtn.disabled = false;
-            disableMockBtn.disabled = true;
-            simulateFaultBtn.disabled = true;
-
-            // 清空设备列表
-            connectedLamps.clear();
-            renderLampList();
-
-            connectionStatusEl.textContent = '未连接';
-            connectionStatusEl.style.color = '';
-
-            logMessage('模拟测试模式已禁用', 'warn');
-        });
-
-        // 模拟故障告警
-        simulateFaultBtn.addEventListener('tap', function() {
-            const lampId = lampIdInput.value.trim();
-            if (mockSimulator && lampId) {
-                mockSimulator.simulateFaultAlert(lampId, 'battery_low');
-                logMessage(`模拟 ${lampId} 故障告警已发送`, 'warn');
-            }
-        });
-
-        // ========== MQTT连接功能 ==========
 
         // 日志记录函数
         function logMessage(message, type = 'info') {
@@ -274,10 +180,9 @@
             if (!mqttClient) {
                 mqttClient = new SmartLampMQTT.MQTTClient();
                 lampController = new SmartLampMQTT.LampController(mqttClient);
+            }
 
-                // 更新连接状态
-                updateConnectionStatus();
-
+            if (!mqttClient.isConnected) {
                 mqttClient.connect(
                     function() {
                         logMessage('MQTT连接成功');
@@ -296,18 +201,7 @@
                         });
                     },
                     function(error) {
-                        logMessage(`MQTT连接失败: ${error}`, 'error');
-                        updateConnectionStatus();
-                    }
-                );
-            } else if (!mqttClient.isConnected) {
-                mqttClient.connect(
-                    function() {
-                        logMessage('MQTT重新连接成功');
-                        updateConnectionStatus();
-                    },
-                    function(error) {
-                        logMessage(`MQTT重新连接失败: ${error}`, 'error');
+                        logMessage(`MQTT连接失败: ${JSON.stringify(error)}`, 'error');
                         updateConnectionStatus();
                     }
                 );
@@ -326,70 +220,30 @@
         // 开灯
         turnOnBtn.addEventListener('tap', function() {
             const lampId = lampIdInput.value.trim();
-            if (!lampId) {
-                logMessage('请输入路灯ID', 'warn');
-                return;
-            }
-
-            // 模拟模式处理
-            if (mockSimulator && mockSimulator.isEnabled) {
-                const topic = `smartlamp/control/${lampId}/turn_on`;
-                const command = {
-                    commandId: 'cmd_' + Date.now(),
-                    timestamp: Date.now(),
-                    type: 'control_command',
-                    action: { type: 'turn_on', params: { lampStatus: 1 } }
-                };
-                mockSimulator.handleControlCommand(topic, command);
-                logMessage(`[模拟] 向路灯 ${lampId} 发送开灯命令`);
-                return;
-            }
-
-            // 真实MQTT模式
-            if (lampController) {
+            if (lampId && lampController) {
                 const success = lampController.turnOnLight(lampId);
                 if (success) {
                     logMessage(`向路灯 ${lampId} 发送开灯命令`);
                 } else {
-                    logMessage(`发送开灯命令失败`, 'error');
+                    logMessage('发送开灯命令失败（请先连接MQTT）', 'error');
                 }
             } else {
-                logMessage('请先连接MQTT或启用模拟模式', 'warn');
+                logMessage('请输入路灯ID', 'warn');
             }
         });
 
         // 关灯
         turnOffBtn.addEventListener('tap', function() {
             const lampId = lampIdInput.value.trim();
-            if (!lampId) {
-                logMessage('请输入路灯ID', 'warn');
-                return;
-            }
-
-            // 模拟模式处理
-            if (mockSimulator && mockSimulator.isEnabled) {
-                const topic = `smartlamp/control/${lampId}/turn_off`;
-                const command = {
-                    commandId: 'cmd_' + Date.now(),
-                    timestamp: Date.now(),
-                    type: 'control_command',
-                    action: { type: 'turn_off', params: { lampStatus: 0 } }
-                };
-                mockSimulator.handleControlCommand(topic, command);
-                logMessage(`[模拟] 向路灯 ${lampId} 发送关灯命令`);
-                return;
-            }
-
-            // 真实MQTT模式
-            if (lampController) {
+            if (lampId && lampController) {
                 const success = lampController.turnOffLight(lampId);
                 if (success) {
                     logMessage(`向路灯 ${lampId} 发送关灯命令`);
                 } else {
-                    logMessage(`发送关灯命令失败`, 'error');
+                    logMessage('发送关灯命令失败（请先连接MQTT）', 'error');
                 }
             } else {
-                logMessage('请先连接MQTT或启用模拟模式', 'warn');
+                logMessage('请输入路灯ID', 'warn');
             }
         });
 
@@ -397,99 +251,45 @@
         setBrightnessBtn.addEventListener('tap', function() {
             const lampId = lampIdInput.value.trim();
             const brightness = parseInt(brightnessSlider.value);
-            if (!lampId) {
-                logMessage('请输入路灯ID', 'warn');
-                return;
-            }
-
-            // 模拟模式处理
-            if (mockSimulator && mockSimulator.isEnabled) {
-                const topic = `smartlamp/control/${lampId}/set_brightness`;
-                const command = {
-                    commandId: 'cmd_' + Date.now(),
-                    timestamp: Date.now(),
-                    type: 'control_command',
-                    action: { type: 'set_brightness', params: { brightness: brightness } }
-                };
-                mockSimulator.handleControlCommand(topic, command);
-                logMessage(`[模拟] 向路灯 ${lampId} 设置亮度为 ${brightness}%`);
-                return;
-            }
-
-            // 真实MQTT模式
-            if (lampController) {
+            if (lampId && lampController) {
                 const success = lampController.setBrightness(lampId, brightness);
                 if (success) {
                     logMessage(`向路灯 ${lampId} 设置亮度为 ${brightness}%`);
                 } else {
-                    logMessage(`发送亮度设置命令失败`, 'error');
+                    logMessage('发送亮度设置命令失败（请先连接MQTT）', 'error');
                 }
             } else {
-                logMessage('请先连接MQTT或启用模拟模式', 'warn');
+                logMessage('请输入路灯ID', 'warn');
             }
         });
 
         // 获取路灯状态
         getLampStatusBtn.addEventListener('tap', function() {
             const lampId = lampIdInput.value.trim();
-            if (!lampId) {
-                logMessage('请输入路灯ID', 'warn');
-                return;
-            }
-
-            // 模拟模式处理
-            if (mockSimulator && mockSimulator.isEnabled) {
-                const status = mockSimulator.getSimulatedDeviceStatus(lampId);
-                if (status) {
-                    logMessage(`[模拟] 路灯 ${lampId} 当前状态:`);
-                    logMessage(`  灯状态: ${status.lampStatus === 1 ? '开启' : '关闭'}`);
-                    logMessage(`  运行模式: ${status.mode === 1 ? '自动' : '手动'}`);
-                    logMessage(`  亮度: ${status.brightness}%`);
-                    logMessage(`  电池电量: ${Math.floor(status.batteryLevel)}%`);
-                } else {
-                    logMessage(`[模拟] 路灯 ${lampId} 不在模拟列表中`, 'warn');
-                }
-                return;
-            }
-
-            // 真实MQTT模式
-            if (lampController) {
+            if (lampId && lampController) {
                 const status = lampController.getLampStatus(lampId);
                 if (status) {
                     logMessage(`路灯 ${lampId} 当前状态: ${JSON.stringify(status)}`);
                 } else {
-                    logMessage(`路灯 ${lampId} 状态未获取到`, 'warn');
+                    logMessage(`路灯 ${lampId} 状态未获取到（等待设备上报）`, 'warn');
                 }
             } else {
-                logMessage('请先连接MQTT或启用模拟模式', 'warn');
+                logMessage('请输入路灯ID', 'warn');
             }
         });
 
         // 请求路灯状态
         requestStatusBtn.addEventListener('tap', function() {
             const lampId = lampIdInput.value.trim();
-            if (!lampId) {
-                logMessage('请输入路灯ID', 'warn');
-                return;
-            }
-
-            // 模拟模式处理
-            if (mockSimulator && mockSimulator.isEnabled) {
-                mockSimulator.publishDeviceStatus(lampId);
-                logMessage(`[模拟] 请求路灯 ${lampId} 状态`);
-                return;
-            }
-
-            // 真实MQTT模式
-            if (mqttClient) {
+            if (lampId && mqttClient) {
                 const success = mqttClient.requestLampStatus(lampId);
                 if (success) {
                     logMessage(`向路灯 ${lampId} 请求状态`);
                 } else {
-                    logMessage(`请求路灯状态失败`, 'error');
+                    logMessage('请求路灯状态失败（请先连接MQTT）', 'error');
                 }
             } else {
-                logMessage('请先连接MQTT或启用模拟模式', 'warn');
+                logMessage('请输入路灯ID', 'warn');
             }
         });
 
@@ -500,7 +300,6 @@
                 connectionStatusEl.textContent = status.isConnected ? '已连接' : '未连接';
                 reconnectCountEl.textContent = status.reconnectAttempts;
 
-                // 根据连接状态启用/禁用按钮
                 connectBtn.disabled = status.isConnected;
                 disconnectBtn.disabled = !status.isConnected;
             } else {
@@ -519,18 +318,16 @@
 
         // 显示故障告警
         function showFaultAlert(lampId, data) {
-            // 在路灯列表中显示故障告警
             const alertDiv = document.createElement('div');
             alertDiv.className = 'fault-alert';
             alertDiv.textContent = `路灯 ${lampId} 发生故障: ${data.message || JSON.stringify(data)}`;
             document.body.appendChild(alertDiv);
 
-            // 3秒后移除告警
             setTimeout(() => {
                 if (alertDiv.parentNode) {
                     alertDiv.parentNode.removeChild(alertDiv);
                 }
-            }, 3000);
+            }, 5000);
         }
 
         // 渲染路灯列表
@@ -538,7 +335,7 @@
             lampListEl.innerHTML = '';
 
             if (connectedLamps.size === 0) {
-                lampListEl.innerHTML = '<p>暂无路灯状态数据</p>';
+                lampListEl.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">等待硬件设备上线后显示...</p>';
                 return;
             }
 
@@ -546,14 +343,12 @@
                 const lampItem = document.createElement('div');
                 lampItem.className = 'lamp-item';
 
-                // 根据灯的状态设置样式
                 if (data.data && data.data.lampStatus === 1) {
                     lampItem.classList.add('lamp-on');
                 } else {
                     lampItem.classList.add('lamp-off');
                 }
 
-                // 解析数据
                 const lampData = data.data || {};
                 lampItem.innerHTML = `
                     <h5>路灯ID: ${lampId}</h5>
@@ -561,8 +356,6 @@
                     <p>区域: ${lampData.area || '未知'}</p>
                     <p>状态: ${lampData.lampStatus === 1 ? '开启' : lampData.lampStatus === 0 ? '关闭' : '未知'}</p>
                     <p>模式: ${lampData.mode === 0 ? '手动' : lampData.mode === 1 ? '自动' : '未知'}</p>
-                    <p>电池电量: ${lampData.battrayPackOneCharge || 'N/A'}V</p>
-                    <p>位置: ${lampData.longitude || 'N/A'}, ${lampData.latitude || 'N/A'}</p>
                     <p>更新时间: ${data.updateTime ? new Date(data.updateTime).toLocaleString() : 'N/A'}</p>
                 `;
 
@@ -575,12 +368,12 @@
 
         // 页面加载完成后初始化
         document.addEventListener('plusready', function() {
-            logMessage('页面加载完成，等待连接MQTT...');
+            logMessage('页面加载完成，等待MQTT连接...');
         });
 
         // 如果在浏览器中运行
         if (!window.plus) {
-            logMessage('在浏览器环境中运行，H5+ API不可用');
+            logMessage('在浏览器环境中运行');
         }
     </script>
 </body>

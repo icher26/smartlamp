@@ -1,14 +1,14 @@
 # 智能路灯管理系统 - MQTT集成文档
 
-> **文档版本**: v1.1
+> **文档版本**: v1.0
 > **最后更新**: 2026-03-28
-> **集成状态**: ✅ MQTT接口已就绪，支持模拟测试
+> **集成状态**: ⏳ MQTT接口已预留，等待硬件端联调
 
 ---
 
 ## 📘 文档概述
 
-本文档详细说明智能路灯管理系统与MQTT协议的集成方案，包括架构设计、实现方案、API接口规范以及与现有系统的兼容性等内容。
+本文档详细说明智能路灯管理系统与MQTT协议的集成方案，包括架构设计、API接口规范以及与现有系统的兼容性等内容。
 
 ### 集成目标
 
@@ -16,76 +16,6 @@
 - 提供双向通信能力，支持远程指令下发
 - 保持与现有HTTP API的兼容性
 - 支持大规模路灯设备的统一管理
-- **支持模拟测试，便于在没有硬件时验证前端逻辑**
-
----
-
-## 🧪 模拟测试模式（新增）
-
-在没有真实硬件设备的环境下，可以使用模拟测试模式验证前端MQTT逻辑。
-
-### 启用模拟测试
-
-1. 打开 `mqtt_control_panel.html`
-2. 点击 **「启用模拟」** 按钮
-3. 系统将自动创建3个模拟设备（LAMP001, LAMP002, LAMP003）
-4. 模拟设备会定期上报状态和心跳
-
-### 模拟功能清单
-
-| 功能 | 说明 |
-|------|------|
-| 状态上报 | 每30秒自动上报设备状态 |
-| 心跳消息 | 每30秒发送心跳 |
-| 开灯命令 | 模拟执行开灯操作 |
-| 关灯命令 | 模拟执行关灯操作 |
-| 亮度调节 | 模拟设置亮度 |
-| 故障告警 | 手动触发模拟故障 |
-| 命令响应 | 执行命令后返回响应 |
-
-### 代码示例
-
-```javascript
-// 创建MQTT客户端
-const mqttClient = new SmartLampMQTT.MQTTClient();
-
-// 创建模拟设备测试器
-const mockSimulator = new SmartLampMQTT.MockDeviceSimulator(mqttClient);
-
-// 启用模拟模式
-mockSimulator.enable(['LAMP001', 'LAMP002', 'LAMP003']);
-
-// 订阅状态更新
-mqttClient.subscribeToAllLampStatus((lampId, data) => {
-    console.log(`收到${lampId}状态:`, data);
-});
-
-// 发送控制命令
-mockSimulator.handleControlCommand(
-    'smartlamp/control/LAMP001/turn_on',
-    { commandId: 'cmd_001', action: { type: 'turn_on', params: {} } }
-);
-
-// 模拟故障告警
-mockSimulator.simulateFaultAlert('LAMP001', 'battery_low');
-
-// 禁用模拟模式
-mockSimulator.disable();
-```
-
-### 模拟设备状态字段
-
-模拟设备会生成以下状态数据：
-
-| 字段 | 类型 | 说明 |
-|------|------|------|
-| status | Integer | 设备状态 (0停止/1正常/2故障) |
-| lampStatus | Integer | 灯状态 (0关闭/1开启) |
-| mode | Integer | 运行模式 (0手动/1自动) |
-| brightness | Integer | 当前亮度 (0-100) |
-| batteryLevel | Integer | 电池电量百分比 |
-| batteryVoltage | Float | 电池电压 |
-| temperature | Float | 设备温度 |
 
 ---
 
@@ -554,11 +484,10 @@ mockSimulator.disable();
 | 文档 | 说明 |
 |------|------|
 | `MQTT_HARDWARE_INTEGRATION.md` | 硬件端联调交接文档 |
-| `MQTT_INTEGRATION_PLAN.md` | MQTT集成实施计划 |
 | `js/mqtt-client.js` | MQTT客户端核心代码 |
 | `mqtt_control_panel.html` | MQTT调试控制面板 |
 
 ---
 
-**文档版本**: v1.1
+**文档版本**: v1.0
 **最后更新**: 2026-03-28
