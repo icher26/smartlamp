@@ -24,8 +24,15 @@
 		</div>
 	</body>
 	<script>
-		window.addEventListener('customEvent',function(event){
-			plus.webview.currentWebview().reload()
+		// 监听刷新事件（来自提交故障页面）
+		window.addEventListener('refreshFaultList',function(event){
+			console.log('收到刷新事件，重新加载数据');
+			// 重置分页
+			pageNum = 1;
+			// 清空列表
+			list.innerHTML = '';
+			// 重新加载数据
+			load_new_data();
 		});
 		var data_arr = [{}]
 		var list = document.getElementById("list");
@@ -63,24 +70,36 @@
 				timeout:10000,//超时时间设置为10秒；
 				headers:{'Content-Type':'application/json'},
 				success:function(data){
+					console.log('=== 故障列表响应 ===');
+					console.log('原始数据:', JSON.stringify(data));
 					// 兼容多种响应格式
 					var records = null;
 					if (data && data.code === 200 && data.data) {
 						records = data.data.records || (Array.isArray(data.data) ? data.data : null);
+						console.log('格式1: code=200, data有值');
 					} else if (data && data.records) {
 						records = data.records;
+						console.log('格式2: 有records字段');
 					} else if (Array.isArray(data)) {
 						records = data;
+						console.log('格式3: 直接是数组');
 					}
+					console.log('解析出的记录数:', records ? records.length : 0);
 
 					if(records && records.length > 0){
+						console.log('第一条数据:', JSON.stringify(records[0]));
 						// 根据status过滤待处理(1)的故障
 						var filteredData = records.filter(function(item) {
+							console.log('过滤项 status:', item.status, 'typeof:', typeof item.status);
 							return item.status === 1 || item.status === "1" || item.handled === 1 || item.handled === "1";
 						});
+						console.log('过滤后的记录数:', filteredData.length);
 						if(filteredData.length > 0) {
 							data_arr = filteredData;
+							console.log('准备渲染, data_arr长度:', data_arr.length);
+							console.log('list元素:', list);
 							list.appendChild(createFragment(data_arr.length));
+							console.log('渲染完成, list子元素数:', list.children.length);
 							pageNum = pageNum + 1;
 						}
 					}
@@ -91,8 +110,11 @@
 				}
 			});
 			setTimeout(function() {
-				mui('#load_card').pullRefresh().endPullupToRefresh(true); //这行代码会隐藏掉 “正在加载...” 容器
-				mui('#load_card').pullRefresh().refresh(true);
+				console.log('执行 endPullupToRefresh 前, list子元素数:', list.children.length);
+				mui('#load_card').pullRefresh().endPullupToRefresh(true);
+				console.log('执行 endPullupToRefresh 后, list子元素数:', list.children.length);
+				// 注释掉 refresh，可能会导致列表清空
+				// mui('#load_card').pullRefresh().refresh(true);
 			}, 1000);
 		}
 		

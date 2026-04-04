@@ -81,8 +81,16 @@
 						console.log('响应数据:', data);
 						if(data != null && data.code === 200){
 							mui.toast("提交成功");
-							var lamppage = plus.webview.getWebviewById('management.html')
-							mui.fire(lamppage,'customEvent');
+							// 通知待处理故障页面刷新数据
+							var toBeProcessPage = plus.webview.getWebviewById('to_be_process.html');
+							if (toBeProcessPage) {
+								mui.fire(toBeProcessPage, 'refreshFaultList');
+							}
+							// 同时通知管理页面（如果需要的话）
+							var managementPage = plus.webview.getWebviewById('management.html');
+							if (managementPage) {
+								mui.fire(managementPage, 'customEvent');
+							}
 							mui.back()
 						} else {
 							mui.toast("操作失败: " + (data.msg || data.message || '未知错误'));
