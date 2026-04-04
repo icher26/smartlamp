@@ -24,8 +24,16 @@
 		</div>
 	</body>
 	<script>
+		// 监听刷新事件
 		window.addEventListener('customEvent',function(event){
 			plus.webview.currentWebview().reload()
+		});
+		// 监听来自待处理故障页面的刷新事件
+		window.addEventListener('refreshHandledList',function(event){
+			console.log('收到刷新事件，重新加载数据');
+			pageNum = 1;
+			list.innerHTML = '';
+			load_new_data();
 		});
 		var data_arr = [{}]
 		var list = document.getElementById("list");

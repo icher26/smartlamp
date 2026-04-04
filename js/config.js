@@ -61,6 +61,8 @@
 				faultAdd: '/faults/addinfo',
 				faultDelete: '/faults/logicdelete',
 				faultUpdate: '/faults/updateall/',
+				faultCheck: '/faults/check',            // 标记故障为已处理
+				faultQueryAll: '/faults/queryAll',      // 查询所有故障（用于检查路灯是否还有其他故障）
 
 				// 建议管理
 				adviceFindAll: '/advice/findAllByPage',

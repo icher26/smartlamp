@@ -63,24 +63,41 @@
 
 			submit_button.addEventListener('tap', function() {
 				console.log(title_dom.value)
+
+				// 表单验证
+				if (!title_dom.value.trim()) {
+					mui.toast("请输入故障标题");
+					return;
+				}
+				if (!id_flag_dom.value.trim()) {
+					mui.toast("请输入路灯编号");
+					return;
+				}
+
 				var requestData = {
 					"area": area_dom.value,
 					"content": question_dom.value,
 					"lightId": id_flag_dom.value,
-					"title": title_dom.value
+					"title": title_dom.value,
+					"lightName": id_flag_dom.value,  // 添加路灯名称字段
+					"status": 1  // 待处理状态
 				};
 				console.log('发送数据:', JSON.stringify(requestData));
 
 				mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.faultAdd),{
 					dataType:'json',
 					type:'post',
-					data: JSON.stringify(requestData),  // 手动序列化为JSON字符串
+					data: JSON.stringify(requestData),
 					timeout:10000,
 					headers:{'Content-Type':'application/json'},
 					success:function(data){
 						console.log('响应数据:', data);
 						if(data != null && data.code === 200){
 							mui.toast("提交成功");
+
+							// 将对应路灯标记为故障状态
+							setLampFaultStatus(id_flag_dom.value.trim());
+
 							// 通知待处理故障页面刷新数据
 							var toBeProcessPage = plus.webview.getWebviewById('to_be_process.html');
 							if (toBeProcessPage) {
@@ -102,6 +119,78 @@
 					}
 				});
 			})
+
+			/**
+			 * 将路灯标记为故障状态
+			 * @param {string} lightId - 路灯物理编号
+			 */
+			function setLampFaultStatus(lightId) {
+				console.log('🔍 查找路灯编号:', lightId, '，准备标记为故障状态');
+
+				// 先查询所有路灯，找到对应的路灯ID
+				mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.lampsFindAll) + '/1', {
+					dataType: 'json',
+					type: 'get',
+					timeout: 10000,
+					headers: {'Content-Type': 'application/json'},
+					success: function(data) {
+						console.log('路灯列表响应:', data);
+
+						// 解析路灯数据
+						var lamps = null;
+						if (data && data.code === 200 && data.data) {
+							lamps = data.data.records || data.data;
+						} else if (data && data.records) {
+							lamps = data.records;
+						} else if (Array.isArray(data)) {
+							lamps = data;
+						}
+
+						if (lamps && lamps.length > 0) {
+							// 根据 lightId 查找对应的路灯
+							var targetLamp = lamps.find(function(lamp) {
+								return lamp.lightId === lightId || lamp.lightId === String(lightId);
+							});
+
+							if (targetLamp) {
+								console.log('✅ 找到路灯:', targetLamp);
+								// 调用接口将路灯标记为故障状态
+								updateLampStatusToFault(targetLamp.id);
+							} else {
+								console.warn('⚠️ 未找到编号为', lightId, '的路灯');
+							}
+						}
+					},
+					error: function(xhr, type, errorThrown) {
+						console.error('❌ 查询路灯失败:', errorThrown);
+					}
+				});
+			}
+
+			/**
+			 * 更新路灯状态为故障
+			 * @param {number} lampId - 路灯数据库ID
+			 */
+			function updateLampStatusToFault(lampId) {
+				console.log('🔧 将路灯 ID:', lampId, '标记为故障状态');
+
+				// 调用 /lamps/breaks 接口，参数为 id
+				var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsBreaks) + '?id=' + lampId;
+				console.log('API URL:', apiUrl);
+
+				mui.ajax(apiUrl, {
+					dataType: 'json',
+					type: 'post',
+					timeout: 10000,
+					headers: {'Content-Type': 'application/json'},
+					success: function(data) {
+						console.log('✅ 路灯状态已更新为故障:', data);
+					},
+					error: function(xhr, type, errorThrown) {
+						console.error('❌ 更新路灯光源状态失败:', errorThrown);
+					}
+				});
+			}
 		</script>
 	</body>
 

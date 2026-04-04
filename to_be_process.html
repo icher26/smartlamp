@@ -11,6 +11,65 @@
 		<link rel="stylesheet" href="./css/mui.min.css">
 		<script src="./js/mui.min.js"></script>
 		<script src="./js/config.js"></script>
+		<style>
+			/* 长按操作菜单样式 */
+			.action-sheet {
+				position: fixed;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background: #fff;
+				z-index: 1000;
+				transform: translateY(100%);
+				transition: transform 0.3s ease;
+				border-radius: 12px 12px 0 0;
+				overflow: hidden;
+			}
+			.action-sheet.show {
+				transform: translateY(0);
+			}
+			.action-sheet-mask {
+				position: fixed;
+				left: 0;
+				right: 0;
+				top: 0;
+				bottom: 0;
+				background: rgba(0,0,0,0.4);
+				z-index: 999;
+				display: none;
+			}
+			.action-sheet-mask.show {
+				display: block;
+			}
+			.action-sheet-title {
+				padding: 15px;
+				text-align: center;
+				font-size: 14px;
+				color: #666;
+				border-bottom: 1px solid #eee;
+			}
+			.action-sheet-btn {
+				padding: 15px;
+				text-align: center;
+				font-size: 16px;
+				color: #333;
+				border-bottom: 1px solid #eee;
+			}
+			.action-sheet-btn:active {
+				background: #f5f5f5;
+			}
+			.action-sheet-btn.danger {
+				color: #ff3b30;
+			}
+			.action-sheet-cancel {
+				padding: 15px;
+				text-align: center;
+				font-size: 16px;
+				color: #666;
+				margin-top: 8px;
+				background: #f5f5f5;
+			}
+		</style>
 	</head>
 
 	<body>
@@ -22,8 +81,23 @@
 		    <ul id="list" class="mui-table-view mui-table-view-striped mui-table-view-condensed">
 		    </ul>
 		</div>
+
+		<!-- 长按操作菜单 -->
+		<div class="action-sheet-mask" id="actionMask"></div>
+		<div class="action-sheet" id="actionSheet">
+			<div class="action-sheet-title" id="actionTitle">选择操作</div>
+			<div class="action-sheet-btn danger" id="btnMarkHandled">标记为已处理</div>
+			<div class="action-sheet-btn" id="btnViewDetail">查看详情</div>
+			<div class="action-sheet-cancel" id="btnCancel">取消</div>
+		</div>
 	</body>
 	<script>
+		// ========== 全局变量 ==========
+		var data_arr = [{}];
+		var list = document.getElementById("list");
+		var selectedFaultId = null;  // 当前选中的故障ID
+		var selectedFaultData = null;  // 当前选中的故障数据
+
 		// 监听刷新事件（来自提交故障页面）
 		window.addEventListener('refreshFaultList',function(event){
 			console.log('收到刷新事件，重新加载数据');
@@ -34,8 +108,8 @@
 			// 重新加载数据
 			load_new_data();
 		});
-		var data_arr = [{}]
-		var list = document.getElementById("list");
+
+		// ========== 列表渲染 ==========
 		var createFragment = function(count) {
 			var fragment = document.createDocumentFragment();
 			var li;
@@ -43,6 +117,8 @@
 				li = document.createElement('li');
 				li.className = 'mui-table-view-cell';
 				li.id = data_arr[i].id;
+				// 存储路灯编号到 data 属性
+				li.setAttribute('data-lightId', data_arr[i].lightId || '');
 				// 兼容 creatTime/createTime，添加空值判断
 				var timeStr = data_arr[i].creatTime || data_arr[i].createTime || '';
 				var displayTime = timeStr ? timeStr.substr(0, 10) : '-';
@@ -51,23 +127,24 @@
 			}
 			return fragment;
 		};
-		var pageNum = 1
+
+		var pageNum = 1;
 		mui.init({
-		  pullRefresh : {	
-		      container:"#load_card",//下拉刷新容器标识，querySelector能定位的css选择器均可，比如：id、.class等
-		  	up : {
-		  	  height:50,//可选,默认50.触发下拉刷新拖动距离,
-		  	  auto: true,//可选,默认false.首次加载自动下拉刷新一次
-		  	  callback :load_new_data //必选，刷新函数，根据具体业务来编写，比如通过ajax从服务器获取新数据；
-		  	}
-		  	
-		    }
+			pullRefresh : {
+				container:"#load_card",
+				up : {
+					height:50,
+					auto: true,
+					callback :load_new_data
+				}
+			}
 		});
+
 		function load_new_data() {
 			mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.faultFindAll) + '/' + pageNum,{
-				dataType:'json',//服务器返回json格式数据
-				type:'get',//HTTP请求类型
-				timeout:10000,//超时时间设置为10秒；
+				dataType:'json',
+				type:'get',
+				timeout:10000,
 				headers:{'Content-Type':'application/json'},
 				success:function(data){
 					console.log('=== 故障列表响应 ===');
@@ -76,30 +153,20 @@
 					var records = null;
 					if (data && data.code === 200 && data.data) {
 						records = data.data.records || (Array.isArray(data.data) ? data.data : null);
-						console.log('格式1: code=200, data有值');
 					} else if (data && data.records) {
 						records = data.records;
-						console.log('格式2: 有records字段');
 					} else if (Array.isArray(data)) {
 						records = data;
-						console.log('格式3: 直接是数组');
 					}
-					console.log('解析出的记录数:', records ? records.length : 0);
 
 					if(records && records.length > 0){
-						console.log('第一条数据:', JSON.stringify(records[0]));
 						// 根据status过滤待处理(1)的故障
 						var filteredData = records.filter(function(item) {
-							console.log('过滤项 status:', item.status, 'typeof:', typeof item.status);
 							return item.status === 1 || item.status === "1" || item.handled === 1 || item.handled === "1";
 						});
-						console.log('过滤后的记录数:', filteredData.length);
 						if(filteredData.length > 0) {
 							data_arr = filteredData;
-							console.log('准备渲染, data_arr长度:', data_arr.length);
-							console.log('list元素:', list);
 							list.appendChild(createFragment(data_arr.length));
-							console.log('渲染完成, list子元素数:', list.children.length);
 							pageNum = pageNum + 1;
 						}
 					}
@@ -110,14 +177,11 @@
 				}
 			});
 			setTimeout(function() {
-				console.log('执行 endPullupToRefresh 前, list子元素数:', list.children.length);
 				mui('#load_card').pullRefresh().endPullupToRefresh(true);
-				console.log('执行 endPullupToRefresh 后, list子元素数:', list.children.length);
-				// 注释掉 refresh，可能会导致列表清空
-				// mui('#load_card').pullRefresh().refresh(true);
 			}, 1000);
 		}
-		
+
+		// ========== 点击事件：查看详情 ==========
 		mui(".mui-table-view").on('tap', '.mui-table-view-cell', function (e) {
 			var id = this.getAttribute('id');
 			// 从data_arr中查找完整数据
@@ -129,9 +193,250 @@
 				id:'failure_details',
 				extras:{
 					detailId: id,
-					detailData: selectedItem  // 传递完整数据
+					detailData: selectedItem
 				}
 			});
-		})
+		});
+
+		// ========== 长按事件：显示操作菜单 ==========
+		mui(".mui-table-view").on('longtap', '.mui-table-view-cell', function (e) {
+			var id = this.getAttribute('id');
+			var lightId = this.getAttribute('data-lightId');
+
+			// 从data_arr中查找完整数据
+			var selectedItem = data_arr.find(function(item) {
+				return item.id == id || item.id === parseInt(id);
+			});
+
+			selectedFaultId = id;
+			selectedFaultData = selectedItem;
+			selectedFaultData.lightId = lightId;  // 确保有路灯编号
+
+			console.log('📋 长按选中故障:', selectedFaultId, '路灯编号:', lightId);
+
+			// 显示操作菜单
+			showActionSheet(selectedItem);
+		});
+
+		// ========== 操作菜单相关 ==========
+		var actionSheet = document.getElementById('actionSheet');
+		var actionMask = document.getElementById('actionMask');
+		var actionTitle = document.getElementById('actionTitle');
+		var btnMarkHandled = document.getElementById('btnMarkHandled');
+		var btnViewDetail = document.getElementById('btnViewDetail');
+		var btnCancel = document.getElementById('btnCancel');
+
+		function showActionSheet(faultData) {
+			actionTitle.innerText = (faultData.title || '故障处理') + ' - ' + (faultData.lightId || '未知路灯');
+			actionSheet.classList.add('show');
+			actionMask.classList.add('show');
+		}
+
+		function hideActionSheet() {
+			actionSheet.classList.remove('show');
+			actionMask.classList.remove('show');
+			selectedFaultId = null;
+		}
+
+		// 点击遮罩关闭
+		actionMask.addEventListener('tap', hideActionSheet);
+
+		// 取消按钮
+		btnCancel.addEventListener('tap', hideActionSheet);
+
+		// 查看详情
+		btnViewDetail.addEventListener('tap', function() {
+			hideActionSheet();
+			if (selectedFaultId) {
+				mui.openWindow({
+					url: 'failure_details.html',
+					id:'failure_details',
+					extras:{
+						detailId: selectedFaultId,
+						detailData: selectedFaultData
+					}
+				});
+			}
+		});
+
+		// 标记已处理
+		btnMarkHandled.addEventListener('tap', function() {
+			hideActionSheet();
+			if (selectedFaultId) {
+				mui.confirm('确定将此故障标记为已处理？', '确认操作', ['取消', '确定'], function(e) {
+					if (e.index === 1) {
+						markFaultAsHandled(selectedFaultId, selectedFaultData);
+					}
+				});
+			}
+		});
+
+		/**
+		 * 将故障标记为已处理
+		 * @param {number} faultId - 故障ID
+		 * @param {object} faultData - 故障数据
+		 */
+		function markFaultAsHandled(faultId, faultData) {
+			console.log('🔧 标记故障为已处理:', faultId);
+
+			var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.faultCheck) + '?id=' + faultId;
+			console.log('API URL:', apiUrl);
+
+			mui.ajax(apiUrl, {
+				dataType: 'json',
+				type: 'get',
+				timeout: 10000,
+				headers: {'Content-Type': 'application/json'},
+				success: function(data) {
+					console.log('✅ 故障标记已处理响应:', data);
+					if (data && (data.code === 200 || data === true || data === "success")) {
+						mui.toast("已标记为已处理");
+
+						// 检查该路灯是否还有其他待处理故障
+						var lightId = faultData.lightId || faultData.light_id;
+						if (lightId) {
+							checkAndSetLampNormal(lightId, faultId);
+						}
+
+						// 刷新列表
+						pageNum = 1;
+						list.innerHTML = '';
+						load_new_data();
+
+						// 通知已处理故障页面刷新
+						var handledPage = plus.webview.getWebviewById('handled_fault.html');
+						if (handledPage) {
+							mui.fire(handledPage, 'refreshHandledList');
+						}
+					} else {
+						mui.toast("操作失败: " + (data.msg || data.message || '未知错误'));
+					}
+				},
+				error: function(xhr, type, errorThrown) {
+					console.error('❌ 标记失败:', errorThrown);
+					mui.toast("操作失败，请重试");
+				}
+			});
+		}
+
+		/**
+		 * 检查路灯是否还有其他待处理故障，没有则设为正常
+		 * @param {string} lightId - 路灯物理编号
+		 * @param {number} excludeFaultId - 排除的故障ID（当前已处理的）
+		 */
+		function checkAndSetLampNormal(lightId, excludeFaultId) {
+			console.log('🔍 检查路灯', lightId, '是否还有其他待处理故障');
+
+			// 查询所有故障
+			mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.faultQueryAll), {
+				dataType: 'json',
+				type: 'post',
+				timeout: 10000,
+				headers: {'Content-Type': 'application/json'},
+				success: function(data) {
+					console.log('故障查询响应:', data);
+
+					// 解析故障数据
+					var faults = null;
+					if (data && data.code === 200 && data.data) {
+						faults = data.data.records || data.data;
+					} else if (data && data.records) {
+						faults = data.records;
+					} else if (Array.isArray(data)) {
+						faults = data;
+					}
+
+					if (faults && faults.length > 0) {
+						// 筛选该路灯的其他待处理故障
+						var otherPendingFaults = faults.filter(function(fault) {
+							var isSameLamp = fault.lightId === lightId || fault.light_id === lightId;
+							var isPending = fault.status === 1 || fault.status === "1";
+							var isNotCurrent = fault.id != excludeFaultId && fault.id !== parseInt(excludeFaultId);
+							return isSameLamp && isPending && isNotCurrent;
+						});
+
+						console.log('该路灯其他待处理故障数量:', otherPendingFaults.length);
+
+						// 如果没有其他待处理故障，将路灯设为正常
+						if (otherPendingFaults.length === 0) {
+							console.log('✅ 该路灯没有其他待处理故障，设为正常状态');
+							findLampAndSetNormal(lightId);
+						} else {
+							console.log('⚠️ 该路灯还有其他待处理故障，保持故障状态');
+						}
+					}
+				},
+				error: function(xhr, type, errorThrown) {
+					console.error('❌ 查询故障失败:', errorThrown);
+				}
+			});
+		}
+
+		/**
+		 * 查找路灯并设为正常状态
+		 * @param {string} lightId - 路灯物理编号
+		 */
+		function findLampAndSetNormal(lightId) {
+			console.log('🔍 查找路灯:', lightId);
+
+			// 查询路灯列表
+			mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.lampsFindAll) + '/1', {
+				dataType: 'json',
+				type: 'get',
+				timeout: 10000,
+				headers: {'Content-Type': 'application/json'},
+				success: function(data) {
+					var lamps = null;
+					if (data && data.code === 200 && data.data) {
+						lamps = data.data.records || data.data;
+					} else if (data && data.records) {
+						lamps = data.records;
+					} else if (Array.isArray(data)) {
+						lamps = data;
+					}
+
+					if (lamps && lamps.length > 0) {
+						var targetLamp = lamps.find(function(lamp) {
+							return lamp.lightId === lightId || lamp.lightId === String(lightId);
+						});
+
+						if (targetLamp) {
+							console.log('✅ 找到路灯:', targetLamp);
+							setLampNormal(targetLamp.id);
+						} else {
+							console.warn('⚠️ 未找到编号为', lightId, '的路灯');
+						}
+					}
+				},
+				error: function(xhr, type, errorThrown) {
+					console.error('❌ 查询路灯失败:', errorThrown);
+				}
+			});
+		}
+
+		/**
+		 * 将路灯设为正常状态
+		 * @param {number} lampId - 路灯数据库ID
+		 */
+		function setLampNormal(lampId) {
+			console.log('🔧 将路灯 ID:', lampId, '设为正常状态');
+
+			var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsNormal) + '?id=' + lampId;
+			console.log('API URL:', apiUrl);
+
+			mui.ajax(apiUrl, {
+				dataType: 'json',
+				type: 'post',
+				timeout: 10000,
+				headers: {'Content-Type': 'application/json'},
+				success: function(data) {
+					console.log('✅ 路灯状态已更新为正常:', data);
+					mui.toast("路灯已恢复正常状态");
+				},
+				error: function(xhr, type, errorThrown) {
+					console.error('❌ 更新路灯状态失败:', errorThrown);
+				}
+			});
+		}
 	</script>
 </html>
