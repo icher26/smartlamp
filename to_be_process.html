@@ -119,14 +119,63 @@
 				li.id = data_arr[i].id;
 				// 存储路灯编号到 data 属性
 				li.setAttribute('data-lightId', data_arr[i].lightId || '');
+				li.setAttribute('data-index', i);  // 存储索引，方便查找数据
 				// 兼容 creatTime/createTime，添加空值判断
 				var timeStr = data_arr[i].creatTime || data_arr[i].createTime || '';
 				var displayTime = timeStr ? timeStr.substr(0, 10) : '-';
 				li.innerHTML = '<div class="mui-table"><div class="mui-table-cell mui-col-xs-10"><h4 class="mui-ellipsis">' + (data_arr[i].title || '无标题') + '</h4><p class="mui-h6 mui-ellipsis">' + (data_arr[i].content || '无内容') + '</p></div><div class="mui-table-cell mui-col-xs-2 mui-text-right"><span>' + displayTime + '</span></div></div>';
+
+				// 为每个列表项绑定长按事件
+				(function(item, data) {
+					var longTapTimer = null;
+
+					item.addEventListener('touchstart', function(e) {
+						longTapTimer = setTimeout(function() {
+							console.log('📌 长按触发');
+							// 震动反馈（如果支持）
+							if (navigator.vibrate) {
+								navigator.vibrate(50);
+							}
+							onLongTap(item, data);
+						}, 600);  // 600ms 触发长按
+					}, { passive: true });
+
+					item.addEventListener('touchend', function(e) {
+						if (longTapTimer) {
+							clearTimeout(longTapTimer);
+							longTapTimer = null;
+						}
+					}, { passive: true });
+
+					item.addEventListener('touchmove', function(e) {
+						if (longTapTimer) {
+							clearTimeout(longTapTimer);
+							longTapTimer = null;
+						}
+					}, { passive: true });
+				})(li, data_arr[i]);
+
 				fragment.appendChild(li);
 			}
 			return fragment;
 		};
+
+		// 长按事件处理
+		function onLongTap(element, faultData) {
+			var id = element.getAttribute('id');
+			var lightId = element.getAttribute('data-lightId');
+
+			selectedFaultId = id;
+			selectedFaultData = faultData;
+			if (selectedFaultData) {
+				selectedFaultData.lightId = lightId;
+			}
+
+			console.log('📋 长按选中故障:', selectedFaultId, '路灯编号:', lightId);
+
+			// 显示操作菜单
+			showActionSheet(faultData);
+		}
 
 		var pageNum = 1;
 		mui.init({
@@ -184,8 +233,9 @@
 		// ========== 点击事件：查看详情 ==========
 		mui(".mui-table-view").on('tap', '.mui-table-view-cell', function (e) {
 			var id = this.getAttribute('id');
+			var index = this.getAttribute('data-index');
 			// 从data_arr中查找完整数据
-			var selectedItem = data_arr.find(function(item) {
+			var selectedItem = index !== null ? data_arr[parseInt(index)] : data_arr.find(function(item) {
 				return item.id == id || item.id === parseInt(id);
 			});
 			mui.openWindow({
@@ -198,26 +248,6 @@
 			});
 		});
 
-		// ========== 长按事件：显示操作菜单 ==========
-		mui(".mui-table-view").on('longtap', '.mui-table-view-cell', function (e) {
-			var id = this.getAttribute('id');
-			var lightId = this.getAttribute('data-lightId');
-
-			// 从data_arr中查找完整数据
-			var selectedItem = data_arr.find(function(item) {
-				return item.id == id || item.id === parseInt(id);
-			});
-
-			selectedFaultId = id;
-			selectedFaultData = selectedItem;
-			selectedFaultData.lightId = lightId;  // 确保有路灯编号
-
-			console.log('📋 长按选中故障:', selectedFaultId, '路灯编号:', lightId);
-
-			// 显示操作菜单
-			showActionSheet(selectedItem);
-		});
-
 		// ========== 操作菜单相关 ==========
 		var actionSheet = document.getElementById('actionSheet');
 		var actionMask = document.getElementById('actionMask');
@@ -227,9 +257,12 @@
 		var btnCancel = document.getElementById('btnCancel');
 
 		function showActionSheet(faultData) {
-			actionTitle.innerText = (faultData.title || '故障处理') + ' - ' + (faultData.lightId || '未知路灯');
+			var title = (faultData && faultData.title) ? faultData.title : '故障处理';
+			var lightId = (faultData && faultData.lightId) ? faultData.lightId : '未知路灯';
+			actionTitle.innerText = title + ' - ' + lightId;
 			actionSheet.classList.add('show');
 			actionMask.classList.add('show');
+			console.log('📱 操作菜单已显示');
 		}
 
 		function hideActionSheet() {
