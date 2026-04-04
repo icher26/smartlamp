@@ -229,10 +229,73 @@
 			font-size: 14px;
 			color: #888888;
 		}
+
+		/* ==================== 下拉刷新 ==================== */
+		.pull-refresh-container {
+			position: relative;
+			min-height: 100vh;
+		}
+
+		.pull-refresh-indicator {
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 50px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			transform: translateY(-50px);
+			transition: transform 0.2s ease;
+			background: #F5F5F5;
+			z-index: 50;
+		}
+
+		.pull-refresh-indicator.show {
+			transform: translateY(0);
+		}
+
+		.pull-refresh-indicator.refreshing {
+			transition: none;
+		}
+
+		.pull-refresh-text {
+			font-size: 14px;
+			color: #888888;
+		}
+
+		.pull-refresh-icon {
+			width: 20px;
+			height: 20px;
+			margin-right: 8px;
+			transition: transform 0.3s ease;
+		}
+
+		.pull-refresh-indicator.ready .pull-refresh-icon {
+			transform: rotate(180deg);
+		}
+
+		.pull-refresh-indicator.refreshing .pull-refresh-icon {
+			animation: spin 0.8s linear infinite;
+		}
+
+		@keyframes spin {
+			from { transform: rotate(0deg); }
+			to { transform: rotate(360deg); }
+		}
 	</style>
 </head>
 
 <body>
+	<!-- 下拉刷新指示器 -->
+	<div class="pull-refresh-indicator" id="pullRefreshIndicator">
+		<svg class="pull-refresh-icon" viewBox="0 0 24 24" fill="none" stroke="#888888" stroke-width="2">
+			<path d="M12 4v16M5 11l7-7 7 7"/>
+		</svg>
+		<span class="pull-refresh-text" id="pullRefreshText">下拉刷新</span>
+	</div>
+
+	<div class="pull-refresh-container" id="pullRefreshContainer">
 	<!-- 统计卡片 -->
 	<div class="stats-card" style="margin-top: 10px;">
 		<div class="stats-row">
@@ -265,6 +328,7 @@
 
 	<!-- 加载更多 -->
 	<div class="load-more" id="loadMoreBtn">上拉加载更多</div>
+	</div><!-- 结束 pull-refresh-container -->
 
 	<script src="./js/config.js"></script>
 
@@ -285,6 +349,15 @@
 		var allLoadedData = []; // 存储所有已加载的数据
 		var deletedIds = []; // 存储已删除的路灯ID
 		var allLampsForStats = []; // 存储用于统计的所有路灯数据
+
+		// 下拉刷新相关变量
+		var pullRefreshIndicator = null;
+		var pullRefreshText = null;
+		var touchStartY = 0;
+		var isPulling = false;
+		var isRefreshing = false;
+		var pullDistance = 0;
+		var refreshThreshold = 60; // 触发刷新的下拉距离
 
 		// 从localStorage读取已删除的ID列表
 		function loadDeletedIds() {
@@ -439,6 +512,114 @@
 			}
 		}
 
+		// ========== 下拉刷新功能 ==========
+		function initPullRefresh() {
+			pullRefreshIndicator = document.getElementById('pullRefreshIndicator');
+			pullRefreshText = document.getElementById('pullRefreshText');
+			var container = document.getElementById('pullRefreshContainer');
+
+			if (!pullRefreshIndicator || !container) {
+				console.log('下拉刷新元素未找到');
+				return;
+			}
+
+			container.addEventListener('touchstart', function(e) {
+				if (isRefreshing) return;
+				// 只有在顶部时才启用下拉刷新
+				var scrollTop = document.documentElement.scrollTop || document.body.scrollTop;
+				if (scrollTop <= 0) {
+					touchStartY = e.touches[0].clientY;
+					isPulling = true;
+				}
+			}, { passive: true });
+
+			container.addEventListener('touchmove', function(e) {
+				if (!isPulling || isRefreshing) return;
+
+				var currentY = e.touches[0].clientY;
+				pullDistance = currentY - touchStartY;
+
+				if (pullDistance > 0) {
+					// 阻止默认滚动
+					if (pullDistance > 10) {
+						e.preventDefault();
+					}
+
+					// 更新指示器位置
+					var translateY = Math.min(pullDistance - 50, refreshThreshold);
+					pullRefreshIndicator.style.transform = 'translateY(' + translateY + 'px)';
+					pullRefreshIndicator.classList.add('show');
+
+					// 更新文字和图标
+					if (pullDistance >= refreshThreshold + 50) {
+						pullRefreshIndicator.classList.add('ready');
+						pullRefreshText.textContent = '释放刷新';
+					} else {
+						pullRefreshIndicator.classList.remove('ready');
+						pullRefreshText.textContent = '下拉刷新';
+					}
+				}
+			}, { passive: false });
+
+			container.addEventListener('touchend', function(e) {
+				if (!isPulling || isRefreshing) return;
+
+				isPulling = false;
+
+				if (pullDistance >= refreshThreshold + 50) {
+					// 触发刷新
+					doRefresh();
+				} else {
+					// 回弹
+					resetPullRefresh();
+				}
+
+				pullDistance = 0;
+			}, { passive: true });
+		}
+
+		function doRefresh() {
+			if (isRefreshing) return;
+
+			isRefreshing = true;
+			pullRefreshIndicator.classList.add('refreshing');
+			pullRefreshIndicator.classList.remove('ready');
+			pullRefreshIndicator.style.transform = 'translateY(0)';
+			pullRefreshText.textContent = '正在刷新...';
+
+			console.log('开始下拉刷新');
+
+			// 重置数据并重新加载
+			list.innerHTML = '';
+			pageNum = 1;
+			allLoadedData = [];
+			allLampsForStats = [];
+
+			// 模拟网络延迟后刷新
+			setTimeout(function() {
+				load_new_data();
+
+				// 延迟关闭刷新指示器
+				setTimeout(function() {
+					finishRefresh();
+				}, 500);
+			}, 300);
+		}
+
+		function finishRefresh() {
+			isRefreshing = false;
+			pullRefreshIndicator.classList.remove('refreshing', 'show');
+			pullRefreshIndicator.style.transform = 'translateY(-50px)';
+			pullRefreshText.textContent = '下拉刷新';
+			console.log('刷新完成');
+		}
+
+		function resetPullRefresh() {
+			pullRefreshIndicator.classList.remove('ready', 'show', 'refreshing');
+			pullRefreshIndicator.style.transform = 'translateY(-50px)';
+			pullRefreshText.textContent = '下拉刷新';
+		}
+
 		// 更新路灯状态统计数量
 		function updateStats() {
 
@@ -574,6 +755,10 @@
 			// 加载数据
 			console.log('开始加载统计和列表数据');
 			load_new_data(); // 先加载数据，数据加载完成后会自动调用updateStats()
+
+			// 初始化下拉刷新
+			initPullRefresh();
+
 			console.log('初始化完成');
 		}
 
