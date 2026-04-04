@@ -14,7 +14,6 @@
 		<header class="mui-bar mui-bar-nav">
 			<a class="mui-action-back mui-icon mui-icon-left-nav mui-pull-left"></a>
 			<h1 id="head_line" class="mui-title">标题</h1>
-			<a id="change_status" class="mui-icon mui-icon-loop mui-pull-right"></a>
 		</header>
 		<div class="mui-content">
 			<form class="mui-input-group">
@@ -32,7 +31,6 @@
 		var content_dom = document.getElementById("content")
 		mui.plusReady(function(){
 			var self = plus.webview.currentWebview();
-			var change_status_dom = document.getElementById("change_status")
 			detailId = self.detailId
 			console.log(detailId)
 			mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.adviceSelectOne) + '/' + detailId,{
@@ -44,9 +42,6 @@
 					if(data.code == 200){
 						head_line_dom.innerText = data.data.title
 						content_dom.innerText = data.data.content
-						if(data.data.status == 0){
-							change_status_dom.classList.add('mui-hidden');
-						}
 					}
 				},
 				error:function(xhr,type,errorThrown){
@@ -54,26 +49,6 @@
 					mui.toast("加载失败，请重试");
 				}
 			});
-			change_status_dom.addEventListener('tap', function(){
-				// 使用 adviceUpdate 端点更新建议状态为已处理
-				mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.adviceUpdate) + '?id=' + detailId + '&status=0',{
-					dataType:'json',
-					type:'post',
-					timeout:10000,
-					headers:{'Content-Type':'application/json'},
-					success:function(data){
-						if(data.code == 200){
-							var lamppage = plus.webview.getWebviewById('pending_advice')
-							mui.fire(lamppage,'customEvent');
-							mui.back()
-						}
-					},
-					error:function(xhr,type,errorThrown){
-						console.log(errorThrown)
-						mui.toast("操作失败，请重试");
-					}
-				});
-			})
 		})
 	</script>
 	<style type="text/css">

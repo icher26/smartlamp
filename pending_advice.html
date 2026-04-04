@@ -11,6 +11,65 @@
 		<link rel="stylesheet" href="./css/mui.min.css">
 		<script src="./js/mui.min.js"></script>
 		<script src="./js/config.js"></script>
+		<style>
+			/* 长按操作菜单样式 */
+			.action-sheet {
+				position: fixed;
+				left: 0;
+				right: 0;
+				bottom: 0;
+				background: #fff;
+				z-index: 1000;
+				transform: translateY(100%);
+				transition: transform 0.3s ease;
+				border-radius: 12px 12px 0 0;
+				overflow: hidden;
+			}
+			.action-sheet.show {
+				transform: translateY(0);
+			}
+			.action-sheet-mask {
+				position: fixed;
+				left: 0;
+				right: 0;
+				top: 0;
+				bottom: 0;
+				background: rgba(0,0,0,0.4);
+				z-index: 999;
+				display: none;
+			}
+			.action-sheet-mask.show {
+				display: block;
+			}
+			.action-sheet-title {
+				padding: 15px;
+				text-align: center;
+				font-size: 14px;
+				color: #666;
+				border-bottom: 1px solid #eee;
+			}
+			.action-sheet-btn {
+				padding: 15px;
+				text-align: center;
+				font-size: 16px;
+				color: #333;
+				border-bottom: 1px solid #eee;
+			}
+			.action-sheet-btn:active {
+				background: #f5f5f5;
+			}
+			.action-sheet-btn.danger {
+				color: #ff3b30;
+			}
+			.action-sheet-cancel {
+				padding: 15px;
+				text-align: center;
+				font-size: 16px;
+				color: #666;
+				margin-top: 8px;
+				background: #f5f5f5;
+			}
+		</style>
 	</head>
 
 	<body>
@@ -22,13 +81,27 @@
 		    <ul id="list" class="mui-table-view mui-table-view-striped mui-table-view-condensed">
 		    </ul>
 		</div>
+
+		<!-- 长按操作菜单 -->
+		<div class="action-sheet-mask" id="actionMask"></div>
+		<div class="action-sheet" id="actionSheet">
+			<div class="action-sheet-title" id="actionTitle">选择操作</div>
+			<div class="action-sheet-btn danger" id="btnMarkHandled">标记为已处理</div>
+			<div class="action-sheet-cancel" id="btnCancel">取消</div>
+		</div>
 	</body>
 	<script>
+		// ========== 全局变量 ==========
+		var data_arr = [{}];
+		var list = document.getElementById("list");
+		var selectedAdviceId = null;  // 当前选中的建议ID
+
+		// 监听刷新事件
 		window.addEventListener('customEvent',function(event){
 			plus.webview.currentWebview().reload()
 		});
-		var data_arr = [{}]
-		var list = document.getElementById("list");
+
+		// ========== 列表渲染 ==========
 		var createFragment = function(count) {
 			var fragment = document.createDocumentFragment();
 			var li;
@@ -36,31 +109,75 @@
 				li = document.createElement('li');
 				li.className = 'mui-table-view-cell';
 				li.id = data_arr[i].id;
+				li.setAttribute('data-index', i);  // 存储索引
 				// 兼容 creatTime/createTime，添加空值判断
 				var timeStr = data_arr[i].creatTime || data_arr[i].createTime || '';
 				var displayTime = timeStr ? timeStr.substr(0, 10) : '-';
 				li.innerHTML = '<div class="mui-table"><div class="mui-table-cell mui-col-xs-10"><h4 class="mui-ellipsis">' + (data_arr[i].title || '无标题') + '</h4><p class="mui-h6 mui-ellipsis">' + (data_arr[i].content || '无内容') + '</p></div><div class="mui-table-cell mui-col-xs-2 mui-text-right"><span>' + displayTime + '</span></div></div>';
+
+				// 为每个列表项绑定长按事件
+				(function(item, data) {
+					var longTapTimer = null;
+
+					item.addEventListener('touchstart', function(e) {
+						longTapTimer = setTimeout(function() {
+							console.log('📌 长按触发');
+							// 震动反馈（如果支持）
+							if (navigator.vibrate) {
+								navigator.vibrate(50);
+							}
+							onLongTap(item);
+						}, 600);  // 600ms 触发长按
+					}, { passive: true });
+
+					item.addEventListener('touchend', function(e) {
+						if (longTapTimer) {
+							clearTimeout(longTapTimer);
+							longTapTimer = null;
+						}
+					}, { passive: true });
+
+					item.addEventListener('touchmove', function(e) {
+						if (longTapTimer) {
+							clearTimeout(longTapTimer);
+							longTapTimer = null;
+						}
+					}, { passive: true });
+				})(li, data_arr[i]);
+
 				fragment.appendChild(li);
 			}
 			return fragment;
 		};
-		var pageNum = 1
+
+		// 长按事件处理
+		function onLongTap(element) {
+			var id = element.getAttribute('id');
+			selectedAdviceId = id;
+
+			console.log('📋 长按选中建议:', selectedAdviceId);
+
+			// 显示操作菜单
+			showActionSheet();
+		}
+
+		var pageNum = 1;
 		mui.init({
-		  pullRefresh : {	
-		      container:"#load_card",//下拉刷新容器标识，querySelector能定位的css选择器均可，比如：id、.class等
-		  	up : {
-		  	  height:50,//可选,默认50.触发下拉刷新拖动距离,
-		  	  auto: true,//可选,默认false.首次加载自动下拉刷新一次
-		  	  callback :load_new_data //必选，刷新函数，根据具体业务来编写，比如通过ajax从服务器获取新数据；
-		  	}
-		  	
-		    }
+			pullRefresh : {
+				container:"#load_card",
+				up : {
+					height:50,
+					auto: true,
+					callback :load_new_data
+				}
+			}
 		});
+
 		function load_new_data() {
 			mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.adviceFindAll) + '/' + pageNum,{
-				dataType:'json',//服务器返回json格式数据
-				type:'get',//HTTP请求类型
-				timeout:10000,//超时时间设置为10秒；
+				dataType:'json',
+				type:'get',
+				timeout:10000,
 				headers:{'Content-Type':'application/json'},
 				success:function(data){
 					// 兼容多种响应格式
@@ -91,20 +208,135 @@
 				}
 			});
 			setTimeout(function() {
-				mui('#load_card').pullRefresh().endPullupToRefresh(true); //这行代码会隐藏掉 “正在加载...” 容器
-				mui('#load_card').pullRefresh().refresh(true);
+				mui('#load_card').pullRefresh().endPullupToRefresh(true);
 			}, 1000);
 		}
-		
+
+		// ========== 点击事件：查看详情 ==========
 		mui(".mui-table-view").on('tap', '.mui-table-view-cell', function (e) {
 			var id = this.getAttribute('id');
 			mui.openWindow({
-				url: 'advice_details.html', 
+				url: 'advice_details.html',
 				id:'advice_details',
 				extras:{
 					detailId:id
 				}
 			});
-		})
+		});
+
+		// ========== 操作菜单相关 ==========
+		var actionSheet = document.getElementById('actionSheet');
+		var actionMask = document.getElementById('actionMask');
+		var actionTitle = document.getElementById('actionTitle');
+		var btnMarkHandled = document.getElementById('btnMarkHandled');
+		var btnCancel = document.getElementById('btnCancel');
+
+		function showActionSheet() {
+			actionTitle.innerText = '建议处理';
+			actionSheet.classList.add('show');
+			actionMask.classList.add('show');
+			console.log('📱 操作菜单已显示');
+		}
+
+		function hideActionSheet() {
+			actionSheet.classList.remove('show');
+			actionMask.classList.remove('show');
+			selectedAdviceId = null;
+		}
+
+		// 点击遮罩关闭
+		actionMask.addEventListener('tap', hideActionSheet);
+
+		// 取消按钮
+		btnCancel.addEventListener('tap', hideActionSheet);
+
+		// 标记已处理
+		btnMarkHandled.addEventListener('tap', function() {
+			// 先保存选中的ID，因为 hideActionSheet 会清空它
+			var adviceId = selectedAdviceId;
+
+			hideActionSheet();
+
+			if (adviceId) {
+				console.log('🔘 点击标记已处理按钮，建议ID:', adviceId);
+				// 使用原生确认框
+				if (typeof plus !== 'undefined') {
+					plus.nativeUI.confirm('确定将此建议标记为已处理？', function(e) {
+						console.log('确认框结果:', e.index);
+						if (e.index === 1) {
+							markAdviceAsHandled(adviceId);
+						}
+					}, '确认操作', ['取消', '确定']);
+				} else {
+					if (confirm('确定将此建议标记为已处理？')) {
+						markAdviceAsHandled(adviceId);
+					}
+				}
+			} else {
+				console.log('❌ 没有选中的建议ID');
+			}
+		});
+
+		/**
+		 * 将建议标记为已处理
+		 * 使用 POST + request body 方式调用后端接口
+		 * @param {number} adviceId - 建议ID
+		 */
+		function markAdviceAsHandled(adviceId) {
+			console.log('🔧 标记建议为已处理:', adviceId);
+
+			// 使用 adviceCheck 端点，POST + request body
+			var requestBody = {
+				"id": parseInt(adviceId)
+			};
+			console.log('请求体:', JSON.stringify(requestBody));
+
+			mui.ajax(appConfig.getApiUrl(appConfig.api.endpoints.adviceCheck), {
+				dataType: 'json',
+				type: 'post',
+				data: JSON.stringify(requestBody),
+				timeout: 10000,
+				headers: {'Content-Type': 'application/json'},
+				success: function(data) {
+					console.log('✅ 建议标记已处理响应:', JSON.stringify(data));
+
+					// 判断成功 - 兼容多种响应格式
+					var isSuccess = false;
+					if (data && data.code === 200) {
+						isSuccess = true;
+					} else if (data === true || data === "success" || data === "true") {
+						isSuccess = true;
+					} else if (data && data.data === true) {
+						isSuccess = true;
+					}
+
+					if (isSuccess) {
+						mui.toast("已标记为已处理");
+
+						// 刷新当前列表
+						pageNum = 1;
+						list.innerHTML = '';
+						data_arr = [];
+						load_new_data();
+
+						// 通知已处理建议页面刷新
+						if (typeof plus !== 'undefined') {
+							var processedPage = plus.webview.getWebviewById('processed_advice.html');
+							if (processedPage) {
+								mui.fire(processedPage, 'customEvent');
+							}
+						}
+					} else {
+						console.error('❌ 操作失败，响应:', data);
+						mui.toast("操作失败: " + (data && (data.msg || data.message) || '未知错误'));
+					}
+				},
+				error: function(xhr, type, errorThrown) {
+					console.error('❌ 标记失败:', type, errorThrown);
+					console.error('响应内容:', xhr.responseText);
+					mui.toast("操作失败，请重试");
+				}
+			});
+		}
 	</script>
 </html>
