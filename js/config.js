@@ -70,6 +70,7 @@
 				adviceAdd: '/advice/addinfo',
 				adviceDelete: '/advice/logicdelete',
 				adviceUpdate: '/advice/updateall/',
+				adviceCheck: '/advice/check',            // 标记建议为已处理
 
 				// 维修管理
 				repairFindAll: '/repair/findAllByPage',
