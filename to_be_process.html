@@ -87,7 +87,6 @@
 		<div class="action-sheet" id="actionSheet">
 			<div class="action-sheet-title" id="actionTitle">选择操作</div>
 			<div class="action-sheet-btn danger" id="btnMarkHandled">标记为已处理</div>
-			<div class="action-sheet-btn" id="btnViewDetail">查看详情</div>
 			<div class="action-sheet-cancel" id="btnCancel">取消</div>
 		</div>
 	</body>
@@ -253,7 +252,6 @@
 		var actionMask = document.getElementById('actionMask');
 		var actionTitle = document.getElementById('actionTitle');
 		var btnMarkHandled = document.getElementById('btnMarkHandled');
-		var btnViewDetail = document.getElementById('btnViewDetail');
 		var btnCancel = document.getElementById('btnCancel');
 
 		function showActionSheet(faultData) {
@@ -277,30 +275,31 @@
 		// 取消按钮
 		btnCancel.addEventListener('tap', hideActionSheet);
 
-		// 查看详情
-		btnViewDetail.addEventListener('tap', function() {
-			hideActionSheet();
-			if (selectedFaultId) {
-				mui.openWindow({
-					url: 'failure_details.html',
-					id:'failure_details',
-					extras:{
-						detailId: selectedFaultId,
-						detailData: selectedFaultData
-					}
-				});
-			}
-		});
-
 		// 标记已处理
 		btnMarkHandled.addEventListener('tap', function() {
+			// 先保存选中的ID，因为 hideActionSheet 会清空它
+			var faultId = selectedFaultId;
+			var faultData = selectedFaultData;
+
 			hideActionSheet();
-			if (selectedFaultId) {
-				mui.confirm('确定将此故障标记为已处理？', '确认操作', ['取消', '确定'], function(e) {
-					if (e.index === 1) {
-						markFaultAsHandled(selectedFaultId, selectedFaultData);
+
+			if (faultId) {
+				console.log('🔘 点击标记已处理按钮，故障ID:', faultId);
+				// 使用原生确认框
+				if (typeof plus !== 'undefined') {
+					plus.nativeUI.confirm('确定将此故障标记为已处理？', function(e) {
+						console.log('确认框结果:', e.index);
+						if (e.index === 1) {
+							markFaultAsHandled(faultId, faultData);
+						}
+					}, '确认操作', ['取消', '确定']);
+				} else {
+					if (confirm('确定将此故障标记为已处理？')) {
+						markFaultAsHandled(faultId, faultData);
 					}
-				});
+				}
+			} else {
+				console.log('❌ 没有选中的故障ID');
 			}
 		});
 
@@ -321,38 +320,54 @@
 				timeout: 10000,
 				headers: {'Content-Type': 'application/json'},
 				success: function(data) {
-					console.log('✅ 故障标记已处理响应:', data);
-					if (data && (data.code === 200 || data === true || data === "success")) {
+					console.log('✅ 故障标记已处理响应:', JSON.stringify(data));
+
+					// 判断成功 - 兼容多种响应格式
+					var isSuccess = false;
+					if (data && data.code === 200) {
+						isSuccess = true;
+					} else if (data === true || data === "success" || data === "true") {
+						isSuccess = true;
+					} else if (data && data.data === true) {
+						isSuccess = true;
+					}
+
+					if (isSuccess) {
 						mui.toast("已标记为已处理");
 
 						// 检查该路灯是否还有其他待处理故障
-						var lightId = faultData.lightId || faultData.light_id;
+						var lightId = faultData ? (faultData.lightId || faultData.light_id) : null;
 						if (lightId) {
 							checkAndSetLampNormal(lightId, faultId);
 						}
 
-						// 刷新列表
+						// 刷新当前列表
 						pageNum = 1;
 						list.innerHTML = '';
+						data_arr = [];
 						load_new_data();
 
 						// 通知已处理故障页面刷新
-						var handledPage = plus.webview.getWebviewById('handled_fault.html');
-						if (handledPage) {
-							mui.fire(handledPage, 'refreshHandledList');
-						}
+						if (typeof plus !== 'undefined') {
+							var handledPage = plus.webview.getWebviewById('handled_fault.html');
+							if (handledPage) {
+								mui.fire(handledPage, 'refreshHandledList');
+							}
 
-						// 通知路灯列表页面刷新
-						var lampPage = plus.webview.getWebviewById('lamp.html');
-						if (lampPage) {
-							mui.fire(lampPage, 'refreshLampList');
+							// 通知路灯列表页面刷新
+							var lampPage = plus.webview.getWebviewById('lamp.html');
+							if (lampPage) {
+								mui.fire(lampPage, 'refreshLampList');
+							}
 						}
 					} else {
-						mui.toast("操作失败: " + (data.msg || data.message || '未知错误'));
+						console.error('❌ 操作失败，响应:', data);
+						mui.toast("操作失败: " + (data && (data.msg || data.message) || '未知错误'));
 					}
 				},
 				error: function(xhr, type, errorThrown) {
-					console.error('❌ 标记失败:', errorThrown);
+					console.error('❌ 标记失败:', type, errorThrown);
+					console.error('响应内容:', xhr.responseText);
 					mui.toast("操作失败，请重试");
 				}
 			});
