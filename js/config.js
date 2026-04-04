@@ -77,7 +77,10 @@
 				repairSelectOne: '/repair/selectone',
 				repairAdd: '/repair/addperson',      // 新增维修人员
 				repairDelete: '/repair/delete',       // 删除维修人员（路径参数：/repair/delete/{id}）
-				repairUpdate: '/repair/updateall/'
+				repairUpdate: '/repair/updateall/',
+
+				// 路灯统计
+				lampStatsTimeDistribution: '/lamp-stats/lighting/time-distribution'  // 亮灯时段分布
 			}
 		},
 

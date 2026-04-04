@@ -165,7 +165,19 @@
 
 		.chart {
 			width: 100%;
-			height: 280px;
+			height: 320px;
+		}
+
+		/* 亮灯时段分布图表 */
+		#lightTimeChart {
+			width: 100%;
+			height: 350px;
+			min-width: 400px;
+		}
+
+		.chart-container {
+			width: 100%;
+			padding: 0 5px;
 		}
 
 		/* ==================== 按钮组 ==================== */
@@ -437,7 +449,10 @@
 
 		var detailId = 0;
 		var currentData = {};
+		// 24小时时间段标签（简洁格式避免遮挡）
 		var timeData = ["00-01","01-02","02-03","03-04","04-05","05-06","06-07","07-08","08-09","09-10","10-11","11-12","12-13","13-14","14-15","15-16","16-17","17-18","18-19","19-20","20-21","21-22","22-23","23-24"];
+		// 亮灯时段分布数据缓存
+		var lightingDistributionData = null;
 
 		// 从 localStorage 读取修改过的路灯数据
 		function loadModifiedLampData() {
@@ -470,10 +485,200 @@
 		}
 
 		// 初始化图表
-		// 初始化图表
 		var batteryAChart = echarts.init(document.getElementById('batteryAChart'));
 		var batteryBChart = echarts.init(document.getElementById('batteryBChart'));
 		var lightTimeChart = echarts.init(document.getElementById('lightTimeChart'));
+
+		/**
+		 * 加载亮灯时段分布数据
+		 * 调用 /lamp-stats/lighting/time-distribution 接口
+		 * @param {number} days - 统计天数，默认7天
+		 */
+		function loadLightingTimeDistribution(days) {
+			days = days || 7;
+			var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampStatsTimeDistribution) + '?days=' + days;
+			console.log('📊 加载亮灯时段分布数据:', apiUrl);
+
+			var xhr = new XMLHttpRequest();
+			xhr.open('GET', apiUrl, true);
+			xhr.setRequestHeader('Content-Type', 'application/json');
+			xhr.timeout = appConfig.api.timeout;
+
+			xhr.onload = function() {
+				console.log('📊 响应状态码:', xhr.status);
+				console.log('📊 响应内容:', xhr.responseText);
+				if (xhr.status === 200) {
+					try {
+						var response = JSON.parse(xhr.responseText);
+						console.log('📊 解析后响应:', response);
+
+						if (response.code === 200 && response.data) {
+							lightingDistributionData = response.data;
+							console.log('📊 数据条数:', lightingDistributionData.length);
+							console.log('📊 数据示例:', JSON.stringify(lightingDistributionData.slice(0, 3)));
+							// 如果已有路灯数据，更新图表
+							if (currentData && currentData.id) {
+								updateLightTimeChart();
+							}
+						} else {
+							console.warn('📊 响应码非200或无数据:', response);
+						}
+					} catch(e) {
+						console.error('📊 解析亮灯时段分布数据失败:', e);
+					}
+				}
+			};
+
+			xhr.onerror = function() {
+				console.error('📊 加载亮灯时段分布数据失败');
+			};
+
+			xhr.send();
+		}
+
+		/**
+		 * 更新24小时点亮统计图表
+		 * 使用 lightingDistributionData 数据
+		 */
+		function updateLightTimeChart() {
+			// 构建24小时完整数据数组（索引0-23对应0点到23点）
+			var yData = new Array(24).fill(0);
+			var durationData = new Array(24).fill(0);
+
+			console.log('📊 开始更新图表，原始数据条数:', lightingDistributionData ? lightingDistributionData.length : 0);
+
+			if (lightingDistributionData && lightingDistributionData.length > 0) {
+				// 填充数据到对应的小时位置
+				for (var i = 0; i < lightingDistributionData.length; i++) {
+					var item = lightingDistributionData[i];
+					var hour = parseInt(item.hour);
+					if (hour >= 0 && hour < 24) {
+						yData[hour] = item.count || 0;
+						durationData[hour] = item.durationSec || 0;
+					}
+				}
+			}
+
+			console.log('📊 完整24小时数据:', yData);
+
+			lightTimeChart.setOption({
+				title: {
+					text: '亮灯时段分布',
+					subtext: '按感应触发次数统计（最近7天）',
+					left: 'center',
+					textStyle: { fontSize: 14, fontWeight: 600, color: '#333333' },
+					subtextStyle: { fontSize: 10, color: '#999999' }
+				},
+				tooltip: {
+					trigger: 'axis',
+					axisPointer: {
+						type: 'shadow',
+						shadowStyle: { color: 'rgba(7, 193, 96, 0.06)' }
+					},
+					backgroundColor: 'rgba(255, 255, 255, 0.96)',
+					borderColor: '#DDDDDD',
+					borderWidth: 1,
+					padding: [8, 12],
+					textStyle: { color: '#333333', fontSize: 12 },
+					formatter: function(params) {
+						if (!params || params.length === 0) return '';
+						var hour = params[0].dataIndex;
+						var count = yData[hour];
+						var duration = durationData[hour];
+						return '<strong style="font-size:13px">' + timeData[hour] + '</strong><br/>' +
+							   '<span style="color:#666">感应次数：</span>' + count + ' 次<br/>' +
+							   '<span style="color:#666">累计亮灯：</span>' + duration + ' 秒';
+					}
+				},
+				grid: {
+					top: 72,
+					left: 38,
+					right: 18,
+					bottom: 65,
+					containLabel: false
+				},
+				xAxis: {
+					type: 'category',
+					data: timeData,
+					boundaryGap: false,     // 柱子对齐刻度
+					axisLabel: {
+						interval: 1,        // 显示偶数时间段标签（00-01, 02-03, 04-05...）
+						rotate: 45,
+						fontSize: 9,
+						color: '#888888',
+						margin: 8
+					},
+					axisLine: {
+						show: true,
+						lineStyle: { color: '#EEEEEE' }
+					},
+					axisTick: {
+						show: true,
+						alignWithLabel: true,  // 刻度线对齐标签
+						lineStyle: { color: '#EEEEEE' }
+					},
+					splitLine: { show: false }
+				},
+				yAxis: {
+					type: 'value',
+					name: '次数',
+					nameLocation: 'end',
+					nameGap: 5,
+					nameTextStyle: { color: '#AAAAAA', fontSize: 9 },
+					minInterval: 1,
+					splitNumber: 4,
+					axisLine: { show: false },
+					axisLabel: {
+						color: '#AAAAAA',
+						fontSize: 9,
+						formatter: '{value}'
+					},
+					splitLine: {
+						lineStyle: {
+							color: '#F5F5F5',
+							type: 'solid',
+							width: 1
+						}
+					}
+				},
+				series: [{
+					type: 'bar',
+					data: yData,
+					barMaxWidth: 22,        // 再增大柱子宽度
+					barMinWidth: 18,
+					barGap: '10%',          // 柱子之间的间隙
+					barCategoryGap: '20%',  // 类目之间的间隙
+					itemStyle: {
+						color: '#07C160',
+						borderRadius: [3, 3, 0, 0],
+						borderWidth: 0
+					},
+					emphasis: {
+						itemStyle: {
+							color: '#06AD56',
+							shadowBlur: 4,
+							shadowColor: 'rgba(7, 193, 96, 0.2)'
+						}
+					},
+					label: {
+						show: true,
+						position: 'top',
+						formatter: function(params) {
+							return params.value > 0 ? params.value : '';
+						},
+						fontSize: 8,
+						color: '#888888',
+						distance: 2
+					}
+				}]
+			});
+
+			// 强制刷新图表尺寸
+			setTimeout(function() {
+				lightTimeChart.resize();
+				console.log('📊 图表渲染完成');
+			}, 100);
+		}
 
 		// 获取URL参数或plus传递的参数
 		function getDetailId() {
@@ -534,6 +739,8 @@
 							currentData = data;
 							updateUI(data);
 							updateCharts(data);
+							// 加载亮灯时段分布数据（默认7天）
+							loadLightingTimeDistribution(7);
 						}
 					} catch(e) {
 						console.log('数据解析错误', e);
@@ -838,51 +1045,8 @@
 				}]
 			});
 
-			// 点亮时间 - 完整24小时数据
-			var yAllData = [
-				data.count1 || 0, data.count2 || 0, data.count3 || 0, data.count4 || 0,
-				data.count5 || 0, data.count6 || 0, data.count7 || 0, data.count8 || 0,
-				data.count9 || 0, data.count10 || 0, data.count11 || 0, data.count12 || 0,
-				data.count13 || 0, data.count14 || 0, data.count15 || 0, data.count16 || 0,
-				data.count17 || 0, data.count18 || 0, data.count19 || 0, data.count20 || 0,
-				data.count21 || 0, data.count22 || 0, data.count23 || 0, data.count24 || 0
-			];
-
-			// 显示完整的24小时数据，不根据lightTime过滤
-			// 这样即使没有lightTime数据，图表也能正常显示完整的24小时统计
-			var xTimeData = timeData; // 使用完整的24小时时间段
-			var yData = yAllData; // 使用完整的24小时点亮次数数据
-
-			lightTimeChart.setOption({
-				title: {
-					text: '24小时点亮统计',
-					left: 'center',
-					textStyle: { fontSize: 14, fontWeight: 600, color: '#000000' }
-				},
-				tooltip: { trigger: 'axis' },
-				grid: { top: 50, left: 40, right: 20, bottom: 80 },
-				xAxis: {
-					type: 'category',
-					data: xTimeData,
-					axisLabel: { interval: 2, rotate: 60, fontSize: 10, color: '#888888' },
-					axisLine: { lineStyle: { color: '#E5E5E5' } }
-				},
-				yAxis: {
-					type: 'value',
-					name: '次数',
-					nameTextStyle: { color: '#888888' },
-					axisLine: { lineStyle: { color: '#E5E5E5' } },
-					axisLabel: { color: '#888888' }
-				},
-				series: [{
-					type: 'line',
-					data: yData,
-					smooth: false,
-					lineStyle: { width: 2, color: '#07C160' },
-					itemStyle: { color: '#07C160' },
-					areaStyle: { color: 'rgba(7, 193, 96, 0.1)' }
-				}]
-			});
+			// 注意：24小时点亮统计图表由 updateLightTimeChart 函数处理
+			// 数据从 /lamp-stats/lighting/time-distribution 接口获取
 		}
 
 		// 返回
