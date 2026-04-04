@@ -92,20 +92,59 @@ guide.html              启动引导页
 
 所有接口基于 `http://8.137.33.218:8880`，由 `js/config.js` 统一管理。
 
+### 用户认证
+
 | 接口 | 方法 | 说明 |
 |------|------|------|
-| /login | POST | 用户登录 |
+| /login | POST | 用户登录（返回 JWT Token） |
 | /register | POST | 用户注册 |
+
+### 路灯管理
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
 | /lamps/lampstotal | POST | 获取路灯总数及区域分布 |
 | /lamps/findAllByPage/:page | GET | 分页查询路灯列表 |
-| /lamps/selectone | POST | 查询单条路灯信息 |
-| /lamps/updateall | POST | 更新路灯信息 |
-| /lamps/delete | POST | 删除路灯 |
-| /lamps/add | POST | 添加路灯 |
-| /fault/select | POST | 查询故障列表 |
-| /fault/addinfo | POST | 提交故障 |
-| /advice/select | POST | 查询建议列表 |
-| /repair/findAllByPage | POST | 分页查询维修人员 |
+| /lamps/selectone/:id | GET | 查询单条路灯信息 |
+| /lamps/updateall/ | POST | 更新路灯信息 |
+| /lamps/logicdelete | POST | 删除路灯（逻辑删除） |
+| /lamps/addinfo | POST | 添加路灯 |
+| /lamps/auto?id={id} | POST | 自动模式 |
+| /lamps/byhand?id={id} | POST | 手动模式 |
+| /lamps/stop/normal/breaks | POST | 状态控制 |
+
+### 故障管理
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /faults/findAllByPage/:page | GET | 分页查询故障列表 |
+| /faults/selectone/:id | GET | 查询单条故障 |
+| /faults/addinfo | POST | 提交故障 |
+| /faults/check?id={id} | GET | 标记故障为已处理 |
+| /faults/queryAll | POST | 查询所有故障 |
+
+### 建议管理
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /advice/findAllByPage/:page | GET | 分页查询建议列表 |
+| /advice/selectone/:id | GET | 查询单条建议 |
+| /advice/addinfo | POST | 提交建议 |
+| /advice/check | POST | 标记建议为已处理 |
+
+### 维修人员管理
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /repair/findAllByPage/:page | GET | 分页查询维修人员 |
+| /repair/addperson | POST | 新增维修人员 |
+| /repair/delete/:id | POST | 删除维修人员 |
+
+### 统计分析
+
+| 接口 | 方法 | 说明 |
+|------|------|------|
+| /lamp-stats/lighting/time-distribution?days={N} | GET | 亮灯时段分布（24小时统计） |
 
 ## 推送至 GitHub
 
@@ -134,3 +173,22 @@ git config --global --unset https.proxy
 |------|------|------|
 | 后端重复控制器 | ⚠️ 待整合 | 存在 `/fault/*` 和 `/faults/*` 两套接口（不影响功能） |
 | 数据模型字段不一致 | ⚠️ 待统一 | `Fault` 模型字段拼写已修正为 `createTime` |
+
+## 版本更新
+
+### v1.6.0 (2026-04-04)
+
+- **亮灯时段分布图表重构**：接入 `/lamp-stats/lighting/time-distribution` 新API
+- **待处理建议长按功能**：支持长按标记为已处理
+- **图表视觉优化**：柱状图样式优化，X轴标签45度倾斜显示
+
+### v1.5.0
+
+- 故障管理模块验证通过
+- 所有核心功能模块已验证
+
+### v1.3.0
+
+- Token 认证机制完善
+- 故障提交字段修复
+- 接口端点错误修正
