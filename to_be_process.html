@@ -308,6 +308,12 @@
 						if (handledPage) {
 							mui.fire(handledPage, 'refreshHandledList');
 						}
+
+						// 通知路灯列表页面刷新
+						var lampPage = plus.webview.getWebviewById('lamp.html');
+						if (lampPage) {
+							mui.fire(lampPage, 'refreshLampList');
+						}
 					} else {
 						mui.toast("操作失败: " + (data.msg || data.message || '未知错误'));
 					}
