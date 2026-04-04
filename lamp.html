@@ -427,6 +427,18 @@
 			xhr.send();
 		}
 
+		// 刷新路灯列表
+		function refreshLampList() {
+			console.log('刷新路灯列表');
+			if (list) {
+				list.innerHTML = '';
+				pageNum = 1;
+				allLoadedData = [];
+				allLampsForStats = [];
+				load_new_data();
+			}
+		}
+
 		// 更新路灯状态统计数量
 		function updateStats() {
 
@@ -548,13 +560,15 @@
 						saveDeletedIds(); // 保存到localStorage
 					}
 					// 刷新列表
-					list.innerHTML = '';
-					pageNum = 1;
-					allLoadedData = [];
-					allLampsForStats = []; // 清空统计数据
-					load_new_data();
+					refreshLampList();
 				});
 				console.log('已添加删除通知监听');
+
+				// 监听刷新路灯列表事件（来自提交故障页面等）
+				window.addEventListener('refreshLampList', function(e) {
+					console.log('收到刷新路灯列表事件');
+					refreshLampList();
+				});
 			}
 
 			// 加载数据

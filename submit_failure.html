@@ -103,10 +103,15 @@
 							if (toBeProcessPage) {
 								mui.fire(toBeProcessPage, 'refreshFaultList');
 							}
-							// 同时通知管理页面（如果需要的话）
+							// 通知管理页面
 							var managementPage = plus.webview.getWebviewById('management.html');
 							if (managementPage) {
 								mui.fire(managementPage, 'customEvent');
+							}
+							// 通知路灯列表页面刷新
+							var lampPage = plus.webview.getWebviewById('lamp.html');
+							if (lampPage) {
+								mui.fire(lampPage, 'refreshLampList');
 							}
 							mui.back()
 						} else {
