@@ -20,6 +20,7 @@
 		    if(user_id == null){    //判断是否为空，如果为空，则打开登录页面,否则打开主页面
 		        mui.openWindow({
 		            url:'login_main.html',
+		            id: 'login_main',
 					show:{
 						aniShow: "none"
 					}
@@ -27,6 +28,7 @@
 		    }else{
 				mui.openWindow({
 				    url:'index.html',
+				    id: 'index',
 					show:{
 						aniShow: "none"
 					}

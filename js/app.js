@@ -8,8 +8,6 @@
 	 * 用户登录
 	 **/
 	owner.login = function(loginInfo, callback) {
-		var mainPage = plus.webview.getWebviewById("main");
-		var main_loaded_flag = false;
 		callback = callback || $.noop;
 		loginInfo = loginInfo || {};
 		loginInfo.account = loginInfo.account || '';
@@ -33,12 +31,30 @@
 			success:function(data){
 				//服务器返回响应，根据响应结果，分析是否登录成功；
 				if(data.code == 200){
+					console.log('[登录] 登录成功');
+
+					// 保存账号
 					plus.storage.setItem('account', loginInfo.account);
 					plus.navigator.setStatusBarBackground('#CBCCCC');
+
+					// 获取当前登录页面
+					var currentWebview = plus.webview.currentWebview();
+
+					// 打开主页面
 					mui.openWindow({
 						url: 'index.html',
-						id: "index"
+						id: 'index',
+						show: {
+							aniShow: 'pop-in',
+							duration: 200
+						}
 					});
+
+					// 延迟关闭登录页，确保主页面已显示
+					setTimeout(function() {
+						console.log('[登录] 关闭登录页');
+						currentWebview.close('none');
+					}, 400);
 				}
 				if(data.code == 500){
 					return callback('用户名或密码错误');
@@ -48,12 +64,6 @@
 				//异常处理；
 				return callback('用户名或密码错误');
 			}
-		});
-		var users = JSON.parse(localStorage.getItem('$users') || '[]');
-		var authed = users.some(function(user) {
-			//return loginInfo.account == user.account && loginInfo.password == user.password;
-			console.log("account:" + loginInfo.account + ", password:" + loginInfo.password);
-			return true;
 		});
 	};
 	

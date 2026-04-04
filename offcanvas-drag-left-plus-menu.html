@@ -126,45 +126,42 @@
 		}
 	});
 
-	var main = null;
-	mui.plusReady(function () {
-		main = plus.webview.currentWebview().opener();
-	})
-
 	// 使用MUI事件委托绑定退出登录
 	mui('.mui-table-view').on('tap', '#logout', function(event) {
 		var btnArray = ['取消', '确定'];
 		mui.confirm('确认退出登录？', '用户注销', btnArray, function(e) {
 			if(e.index == 1){
-				// 点击确定
-				// 调用logout逻辑清除本地存储
-				if(typeof app !== 'undefined' && app.logout) {
-					app.logout();
-				} else {
-					plus.storage.clear();
-				}
+				console.log('[菜单页] 用户确认注销');
 
-				// 先关闭主页面和菜单页面，避免界面重叠
-				var currentPage = plus.webview.currentWebview();
-				var mainPage = currentPage.opener();
+				// 清除本地存储
+				plus.storage.clear();
+				console.log('[菜单页] storage 已清除');
 
-				if(mainPage) {
-					mainPage.close('none');
-				}
-				currentPage.close('none');
+				// 获取主页面
+				var mainPage = plus.webview.getWebviewById('index');
 
-				// 再打开登录页
+				// 先打开登录页（在主页面关闭之前）
+				console.log('[菜单页] 打开登录页');
 				mui.openWindow({
 					url: 'login_main.html',
 					id: 'login_main',
 					show: {
-						autoShow: true,
-						aniShow: 'pop-in'
+						aniShow: 'pop-in',
+						duration: 200
 					},
-					waiting: {
-						autoShow: false
-					}
+					createNew: true
 				});
+
+				// 延迟关闭主页面和菜单页，让登录页先显示
+				setTimeout(function() {
+					// 关闭主页面（会同时关闭其子页面）
+					if (mainPage) {
+						console.log('[菜单页] 关闭主页面');
+						mainPage.close('none');
+					}
+					// 关闭菜单页自己
+					plus.webview.currentWebview().close('none');
+				}, 300);
 			}
 		});
 	});

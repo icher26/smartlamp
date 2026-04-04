@@ -4,7 +4,37 @@
 
 ---
 
-## [1.6.0] - 2026-03-28
+## [1.7.0] - 2026-04-04
+
+### 修复
+
+- **用户注销功能重构** — 彻底解决注销后白屏、卡死、无法重新登录等问题
+  - 简化注销流程：直接打开登录页后关闭主页面
+  - 使用 `getWebviewById('index')` 替代不可靠的 `opener()` 获取主页面引用
+  - 优化页面关闭时序，确保登录页先显示再关闭旧页面
+
+- **登录流程优化** — 解决重新登录后停留在菜单界面的问题
+  - 简化登录逻辑，移除不必要的页面清理代码
+  - 优化页面跳转动画时序
+
+### 优化
+
+- **代码精简** — 移除不再需要的 `logoutEvent` 和 `reRoute` 事件处理代码
+- **日志输出** — 添加关键流程的调试日志，便于问题排查
+
+### 涉及文件
+
+| 文件 | 修改类型 | 说明 |
+|------|----------|------|
+| `offcanvas-drag-left-plus-menu.html` | 重构 | 简化注销逻辑 |
+| `js/app.js` | 优化 | 简化登录跳转逻辑 |
+| `index.html` | 删除 | 移除 logoutEvent 处理代码 |
+| `guide.html` | 删除 | 移除 reRoute 处理代码 |
+| `manifest.json` | 更新 | 版本号更新至 1.7.0 |
+
+---
+
+## [1.6.0] - 2026-04-04
 
 ### 新增
 
@@ -127,6 +157,7 @@
 
 ---
 
+[1.7.0]: https://github.com/icher26/smartlamp/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/icher26/smartlamp/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/icher26/smartlamp/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/icher26/smartlamp/compare/v1.3.0...v1.4.0
