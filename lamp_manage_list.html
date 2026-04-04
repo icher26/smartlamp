@@ -471,8 +471,8 @@
 			console.log('✅ 确认删除路灯，ID:', id);
 			hideDeleteDialog();
 
-			// API: POST /lamps/logicdelete，参数为JSON Body (Long id)
-			var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsDelete);
+			// 后端需要 URL 参数 ?id=xxx
+			var apiUrl = appConfig.getApiUrl(appConfig.api.endpoints.lampsDelete) + '?id=' + id;
 			console.log('📡 删除API URL:', apiUrl);
 
 			var xhr = new XMLHttpRequest();
@@ -534,8 +534,8 @@
 				alert('删除失败: 请求超时');
 			};
 
-			// JSON Body传参
-			xhr.send(JSON.stringify(id));
+			// URL参数已在请求地址中，发送空body
+			xhr.send(null);
 		}
 
 		// 返回功能

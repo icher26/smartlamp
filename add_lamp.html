@@ -240,18 +240,30 @@
 				return;
 			}
 
+			// 获取当前时间，格式化为 YYYY-MM-DD HH:mm:ss
+			var now = new Date();
+			var year = now.getFullYear();
+			var month = String(now.getMonth() + 1).padStart(2, '0');
+			var day = String(now.getDate()).padStart(2, '0');
+			var hours = String(now.getHours()).padStart(2, '0');
+			var minutes = String(now.getMinutes()).padStart(2, '0');
+			var seconds = String(now.getSeconds()).padStart(2, '0');
+			var locationTime = year + '-' + month + '-' + day + ' ' + hours + ':' + minutes + ':' + seconds;
+
 			// 收集表单数据
 			var data = {
 				lightId: document.getElementById('lightId').value.trim(),
 				byname: document.getElementById('byname').value.trim() || '',
 				area: document.getElementById('area').value.trim(),
-				longitude: parseFloat(document.getElementById('longitude').value),
-				latitude: parseFloat(document.getElementById('latitude').value),
+				x: parseFloat(document.getElementById('longitude').value),  // 经度对应数据库字段 x
+				y: parseFloat(document.getElementById('latitude').value),   // 纬度对应数据库字段 y
 				currentHighAngel: parseFloat(document.getElementById('lampHeight').value) || 0,
 				currentDirectionAngel: parseFloat(document.getElementById('lampDirection').value) || 0,
-				status: "1",      // 默认正常状态
-				lampStatus: "0",  // 默认关闭
-				mode: "1"         // 默认自动模式
+				status: 1,          // 默认正常状态（Integer类型）
+				lampStatus: 0,      // 默认关闭（Integer类型）
+				mode: 1,            // 默认自动模式（Integer类型）
+				locationTime: locationTime,  // 添加完整格式的定位时间
+				deleted: 0          // 默认未删除
 			};
 
 			console.log('📤 准备发送数据:', data);
